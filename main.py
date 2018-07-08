@@ -225,8 +225,6 @@ def quantize(data, num_bits, scale_factor, biased=False):
 
 
 def naive_quantization(vocab, X, num_bits):
-    print("naive quantization")
-
     min_val = np.amin(X)
     max_val = np.amax(X)
 
@@ -251,6 +249,43 @@ def naive_quantization(vocab, X, num_bits):
     print_stats(compressed_X, total_bytes, frob_norm)
 
     filename = "quant_" + str(total_bytes) + "bytes_" + str(num_bits)+"bits.txt"
+    to_file(filename, vocab.as_matrix(), compressed_X)
+
+def col_quantization(vocab, X, num_bits):
+    centers = []
+    compressed_X = np.zeros(X.shape)
+    for i in range(X.shape[1]):
+        col = X[:,i]
+
+        min_val = np.amin(col)
+        max_val = np.amax(col)
+
+        center = (max_val-min_val)/2
+        center = max_val-center
+        centers.append(center)
+
+        col = col-center
+        min_val = min_val-center
+        max_val = max_val-center
+
+        min_bit_value = -1 * (2**(num_bits - 1))
+        max_bit_value = 2**(num_bits - 1) - 1
+
+        sf_max = max_val/max_bit_value
+        sf_min = min_val/min_bit_value
+
+        sf = max(sf_min, sf_max)
+        compressed_col = quantize(col, num_bits, sf)
+        compressed_col += center
+        compressed_X[:, i] = compressed_col
+
+    total_bytes = (compressed_X.size*num_bits)/8
+    # store a scale factor and center
+    col_data_bytes = ((32*2)*X.shape[1])/8
+    total_bytes += col_data_bytes
+    print_stats(compressed_X, total_bytes, frob_norm)
+
+    filename = "colquant_" + str(total_bytes) + "bytes_" + str(num_bits)+"bits.txt"
     to_file(filename, vocab.as_matrix(), compressed_X)
 
 parser = argparse.ArgumentParser()
@@ -292,6 +327,7 @@ parser.add_argument(
     ],
     help="Solver/optimization algorithm.")
 args = parser.parse_args()
+print(args)
 
 vocab, embedding = load_embeddings(args.filename)
 frob_norm = print_stats(embedding, embedding.size * 4)
@@ -312,3 +348,6 @@ if args.algo == "kmeans" or args.algo == "all":
 if args.algo == "quant" or args.algo == "all":
     print("Running naive quantization...")
     naive_quantization(vocab, embedding, args.num_bits)
+if args.algo == "quant_col" or args.algo == "all":
+    print("Running column quantization...")
+    col_quantization(vocab, embedding, args.num_bits)
