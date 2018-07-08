@@ -152,7 +152,8 @@ def bucketed_columnwise_kmeans(vocab, embedding, num_buckets,
 
 
 def columnwise_kmeans(vocab, embedding, num_centroids_per_column):
-    compressed_embedding = columnwise_kmean_compression(embedding, 2)
+    compressed_embedding = columnwise_kmean_compression(
+        embedding, num_centroids_per_column)
 
     # Compute how much memory is needed.
     num_codebooks = embedding.shape[1]
@@ -195,7 +196,7 @@ def kmeans(vocab, X, num_centroids):
     t0 = time.time()
 
     # Run kmeans to determine the buckets.
-    kmeans = KMeans(n_clusters=num_centroids).fit(X.reshape(-1,1))
+    kmeans = KMeans(n_clusters=num_centroids).fit(X.reshape(-1, 1))
     print("KMeans Bucket Rows Time: " + str(time.time() - t0))
 
     compressed_X = kmeans.cluster_centers_[kmeans.labels_].reshape(X.shape)
@@ -228,65 +229,69 @@ def naive_quantization(vocab, X, num_bits):
     min_val = np.amin(X)
     max_val = np.amax(X)
 
-    center = (max_val-min_val)/2
-    center = max_val-center
+    center = (max_val - min_val) / 2
+    center = max_val - center
 
-    X_recentered = X-center
-    min_val = min_val-center
-    max_val = max_val-center
+    X_recentered = X - center
+    min_val = min_val - center
+    max_val = max_val - center
 
     min_bit_value = -1 * (2**(num_bits - 1))
     max_bit_value = 2**(num_bits - 1) - 1
 
-    sf_max = max_val/max_bit_value
-    sf_min = min_val/min_bit_value
+    sf_max = max_val / max_bit_value
+    sf_min = min_val / min_bit_value
 
     sf = max(sf_min, sf_max)
     compressed_X = quantize(X, num_bits, sf)
     compressed_X += center
 
-    total_bytes = (compressed_X.size*num_bits)/8
+    total_bytes = (compressed_X.size * num_bits) / 8
     print_stats(compressed_X, total_bytes, frob_norm)
 
-    filename = "quant_" + str(total_bytes) + "bytes_" + str(num_bits)+"bits.txt"
+    filename = "quant_" + str(total_bytes) + "bytes_" + str(
+        num_bits) + "bits.txt"
     to_file(filename, vocab.as_matrix(), compressed_X)
+
 
 def col_quantization(vocab, X, num_bits):
     centers = []
     compressed_X = np.zeros(X.shape)
     for i in range(X.shape[1]):
-        col = X[:,i]
+        col = X[:, i]
 
         min_val = np.amin(col)
         max_val = np.amax(col)
 
-        center = (max_val-min_val)/2
-        center = max_val-center
+        center = (max_val - min_val) / 2
+        center = max_val - center
         centers.append(center)
 
-        col = col-center
-        min_val = min_val-center
-        max_val = max_val-center
+        col = col - center
+        min_val = min_val - center
+        max_val = max_val - center
 
         min_bit_value = -1 * (2**(num_bits - 1))
         max_bit_value = 2**(num_bits - 1) - 1
 
-        sf_max = max_val/max_bit_value
-        sf_min = min_val/min_bit_value
+        sf_max = max_val / max_bit_value
+        sf_min = min_val / min_bit_value
 
         sf = max(sf_min, sf_max)
         compressed_col = quantize(col, num_bits, sf)
         compressed_col += center
         compressed_X[:, i] = compressed_col
 
-    total_bytes = (compressed_X.size*num_bits)/8
+    total_bytes = (compressed_X.size * num_bits) / 8
     # store a scale factor and center
-    col_data_bytes = ((32*2)*X.shape[1])/8
+    col_data_bytes = ((32 * 2) * X.shape[1]) / 8
     total_bytes += col_data_bytes
     print_stats(compressed_X, total_bytes, frob_norm)
 
-    filename = "colquant_" + str(total_bytes) + "bytes_" + str(num_bits)+"bits.txt"
+    filename = "colquant_" + str(total_bytes) + "bytes_" + str(
+        num_bits) + "bits.txt"
     to_file(filename, vocab.as_matrix(), compressed_X)
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
