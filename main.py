@@ -7,7 +7,7 @@ from tqdm import tqdm
 import os
 import argparse
 import utils
-from methods import *
+import driver
 import quantizers
 import bucketers
 
@@ -248,14 +248,14 @@ vocab, embedding = utils.load_embeddings(args.filename)
 row_bucketer = bucketers.full.FullRowBucketer()
 col_bucketer = bucketers.full.FullColBucketer()
 ## TODO Return the number of bytes required for a column reorder.
-quantizer = uniform.UniformQuantizer(args.num_bits)
+quantizer = quantizers.uniform.UniformQuantizer(args.num_bits)
 
-buckets, row_reorder, col_reorder = bucket(row_bucketer, col_bucketer, embedding)
-q_buckets, num_bytes = quantize(buckets, quantizer)
+buckets, row_reorder, col_reorder = driver.bucket(row_bucketer, col_bucketer, embedding)
+q_buckets, num_bytes = driver.quantize(buckets, quantizer)
 num_bytes += col_bucketer.extra_bytes_needed()
 
 filename = utils.get_filename(row_bucketer, col_bucketer, quantizer, num_bytes)
-finish(q_buckets, num_bytes, embedding, vocab, row_reorder, col_reorder, filename)
+driver.finish(q_buckets, num_bytes, embedding, vocab, row_reorder, col_reorder, filename)
 
 #print(buckets)
 #print(q_buckets)
