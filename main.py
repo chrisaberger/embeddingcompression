@@ -6,29 +6,10 @@ import sys
 from tqdm import tqdm
 import os
 import argparse
-
-# Number of clusters per column.
-n_clusters = 32
-
-
-def load_embeddings(filename):
-    """
-    Loads a GloVe embedding at 'filename'. Returns a vector of strings that 
-    represents the vocabulary and a 2-D numpy matrix that is the embeddings. 
-    """
-    df = pd.read_csv(
-        filename,
-        sep=' ',
-        header=None,
-        dtype={0: np.str},
-        keep_default_na=False,
-        na_values=[''])
-    vocab = df[df.columns[0]]
-    embedding = df.drop(df.columns[0], axis=1).as_matrix()
-    print(embedding)
-    print("Embedding shape: " + str(embedding.shape))
-    return vocab, embedding
-
+import utils
+from methods import *
+import quantizers
+import bucketers
 
 def bucket_rows(X, n_buckets):
     t0 = time.time()
@@ -68,37 +49,6 @@ def columnwise_kmean_compression(X, num_centroids_per_column):
         compressed_X_t[i, :] = kmeans.cluster_centers_[kmeans.labels_] \
                                         .reshape(1, compressed_X_t.shape[1])
     return np.transpose(compressed_X_t)
-
-
-def print_stats(X, n_bytes, baseline_frob_norm=None):
-    frob_norm = np.linalg.norm(X)
-    one_d_X = X.flatten()
-    print()
-    print("Bytes Requried: " + str(n_bytes))
-    print("Frobenius Norm of Input: " + str(frob_norm))
-    print("Mean of Input: " + str(np.mean(one_d_X)))
-    print("Standard Deviation of Input: " + str(np.std(one_d_X)))
-    if baseline_frob_norm is not None:
-        print("Frob norm diff: " + str(np.abs(frob_norm - baseline_frob_norm)))
-    print()
-    return frob_norm
-
-
-def to_file(filename, V, X):
-    if not os.path.exists("outputs"):
-        os.makedirs("outputs")
-    filename = os.path.join("outputs", filename)
-
-    print(X)
-    pdv = pd.DataFrame(V)
-    pdv.rename(columns={0: 'v'}, inplace=True)
-    result = pdv.join(pd.DataFrame(X))
-    result.to_csv(filename, sep=' ', index=False, header=False)
-
-
-def num_bits_needed(number):
-    return np.ceil(np.log2(number))
-
 
 def bucketed_columnwise_kmeans(vocab, embedding, num_buckets,
                                num_centroids_per_column):
@@ -212,48 +162,6 @@ def kmeans(vocab, X, num_centroids):
         num_centroids) + "centroids.txt"
     to_file(filename, vocab.as_matrix(), compressed_X)
 
-
-def quantize(data, num_bits, scale_factor, biased=False):
-    if not biased:
-        random_data = np.random.uniform(0, 1, size=data.shape)
-        data = np.floor((data / float(scale_factor)) + random_data)
-    else:
-        data = np.floor(data / float(scale_factor) + 0.5)
-    min_value = -1 * (2**(num_bits - 1))
-    max_value = 2**(num_bits - 1) - 1
-    data = np.clip(data, min_value, max_value)
-    return data * scale_factor
-
-
-def naive_quantization(vocab, X, num_bits):
-    min_val = np.amin(X)
-    max_val = np.amax(X)
-
-    center = (max_val - min_val) / 2
-    center = max_val - center
-
-    X_recentered = X - center
-    min_val = min_val - center
-    max_val = max_val - center
-
-    min_bit_value = -1 * (2**(num_bits - 1))
-    max_bit_value = 2**(num_bits - 1) - 1
-
-    sf_max = max_val / max_bit_value
-    sf_min = min_val / min_bit_value
-
-    sf = max(sf_min, sf_max)
-    compressed_X = quantize(X, num_bits, sf)
-    compressed_X += center
-
-    total_bytes = (compressed_X.size * num_bits) / 8
-    print_stats(compressed_X, total_bytes, frob_norm)
-
-    filename = "quant_" + str(total_bytes) + "bytes_" + str(
-        num_bits) + "bits.txt"
-    to_file(filename, vocab.as_matrix(), compressed_X)
-
-
 def col_quantization(vocab, X, num_bits):
     centers = []
     compressed_X = np.zeros(X.shape)
@@ -332,10 +240,29 @@ parser.add_argument(
     ],
     help="Solver/optimization algorithm.")
 args = parser.parse_args()
+
 print(args)
 
-vocab, embedding = load_embeddings(args.filename)
-frob_norm = print_stats(embedding, embedding.size * 4)
+vocab, embedding = utils.load_embeddings(args.filename)
+
+row_bucketer = bucketers.full.FullRowBucketer()
+col_bucketer = bucketers.full.FullColBucketer()
+## TODO Return the number of bytes required for a column reorder.
+quantizer = uniform.UniformQuantizer(args.num_bits)
+
+buckets, row_reorder, col_reorder = bucket(row_bucketer, col_bucketer, embedding)
+q_buckets, num_bytes = quantize(buckets, quantizer)
+num_bytes += col_bucketer.extra_bytes_needed()
+
+filename = utils.get_filename(row_bucketer, col_bucketer, quantizer, num_bytes)
+finish(q_buckets, num_bytes, embedding, vocab, row_reorder, col_reorder, filename)
+
+#print(buckets)
+#print(q_buckets)
+
+exit()
+
+frob_norm = utils.print_stats(embedding, embedding.size * 4)
 
 if args.algo == "kmeans_bucketed_col" or args.algo == "all":
     print("Running bucketed columnwise kmeans...")
@@ -352,7 +279,7 @@ if args.algo == "kmeans" or args.algo == "all":
     kmeans(vocab, embedding, args.num_centroids)
 if args.algo == "quant" or args.algo == "all":
     print("Running naive quantization...")
-    naive_quantization(vocab, embedding, args.num_bits)
+    quant_uniform_bucketing_none(vocab, embedding, args.num_bits)
 if args.algo == "quant_col" or args.algo == "all":
     print("Running column quantization...")
     col_quantization(vocab, embedding, args.num_bits)
