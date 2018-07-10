@@ -14,7 +14,7 @@ class UniformRowBucketer(Bucketer):
         return 0
 
     def name(self):
-        return "uniform"
+        return "uniform" + str(self.num_buckets)
 
     def bucket(self, X):
         assert (self.num_buckets <= X.shape[0])
@@ -41,7 +41,7 @@ class UniformColBucketer:
         self.num_buckets = num_buckets
 
     def name(self):
-        return "uniform"
+        return "uniform" + str(self.num_buckets)
 
     def extra_bytes_needed(self):
         return 0

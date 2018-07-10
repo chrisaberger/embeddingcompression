@@ -15,7 +15,7 @@ class KmeansRowBucketer(Bucketer):
         self.num_buckets = num_buckets
 
     def name(self):
-        return "kmeans"
+        return "kmeans" + str(self.num_buckets)
 
     def extra_bytes_needed(self):
         # Just need to store the offset for each bucket.
@@ -58,7 +58,7 @@ class KmeansColBucketer(Bucketer):
         self.num_buckets = num_buckets
 
     def name(self):
-        return "kmean"
+        return "kmean" + str(self.num_buckets)
 
     def extra_bytes_needed(self):
         # In each bucket you need a mapping back to the original column order.

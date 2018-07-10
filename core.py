@@ -42,28 +42,47 @@ def finish(buckets, num_bytes, X, V, row_reorder, col_reorder, filename):
     embeddings to a file in GloVe format. The output files always appear in the
     'output' directory.
     """
-    compressed_X = None
     print("Reconstructing...")
+
+    # Allocate buffers for each row bucket. These are used when the columns are
+    # reconstructed.
+    reconstruction_buffers = []
+    for i in range(len(buckets)):
+        assert (len(buckets[i]) > 0)
+        reconstruction_buffers.append(
+            np.zeros([buckets[i][0].shape[0], X.shape[1]]))
+    # Buffer for the final output.
+    compressed_X = np.zeros(X.shape)
+
+    # The indexes into 'compressed_X' for the rows.
+    row_start = 0
+    row_end = 0
     for i in tqdm(range(len(buckets))):
         reconstructed_bucket = None
-        for j in range(len(buckets[i])):
-            # sort back by col_reorder index
-            # stitch into large 'reconstructed' matrix.
-            bucket = buckets[i][j]
-            if reconstructed_bucket is None:
-                reconstructed_bucket = bucket
-            else:
-                reconstructed_bucket = np.append(
-                    reconstructed_bucket, bucket, axis=1)
+        # all column buckets have the same number of rows.
+        row_end = row_start + buckets[i][0].shape[0]
 
+        # The buffer we will reorganize the columns back into.
+        reconstructed_bucket = reconstruction_buffers[i]
+
+        # The col indexes for the 'reconstructed_bucket'.
+        col_start = 0
+        col_end = 0
+
+        for j in range(len(buckets[i])):
+            # stitch into large 'reconstructed' matrix.
+            col_end = col_start + buckets[i][j].shape[1]
+            reconstructed_bucket[:, col_start:col_end] = buckets[i][j]
+            col_start = col_end
+
+        # Sort the buffer by the 'col_reorder' index.
         reconstructed_bucket = reconstructed_bucket[:, col_reorder[i]]
-        if compressed_X is None:
-            compressed_X = reconstructed_bucket
-        else:
-            compressed_X = np.concatenate((compressed_X, reconstructed_bucket))
+        # Place it into our final buffer after it is sorted.
+        compressed_X[row_start:row_end, :] = reconstructed_bucket
+
+        row_start = row_end
 
     print(compressed_X.shape)
-    compressed_X = np.copy(compressed_X, order="F")
 
     # reorder the 'reconstructed' matrix. by row reorder
     print("Reodering rows...")
