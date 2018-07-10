@@ -1,9 +1,9 @@
-class Quantizer:
+class Bucketer:
     def __init__(self):
         raise NotImplementedError
 
     def name(self):
         raise NotImplementedError
 
-    def quantize(self, X):
+    def bucket(self, X):
         raise NotImplementedError

@@ -3,9 +3,9 @@ Uniformly chunks a matrix into 'num_buckets' with no reordering. If no
 'num_buckets' is specified this will return the entire dimension in one bucket.
 """
 import numpy as np
+from .bucketer import Bucketer
 
-
-class UniformRowBucketer:
+class UniformRowBucketer(Bucketer):
 
     def __init__(self, num_buckets):
         self.num_buckets = num_buckets
