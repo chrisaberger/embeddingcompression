@@ -85,11 +85,9 @@ def finish(buckets, num_bytes, X, V, row_reorder, col_reorder, filename):
     print(compressed_X.shape)
 
     # reorder the 'reconstructed' matrix. by row reorder
-    print("Reodering rows...")
     compressed_X = compressed_X[row_reorder, :]
     compressed_X = np.copy(compressed_X, order="F")
 
-    print(compressed_X.shape)
     # Print stats and send to file.
     utils.print_stats(X, compressed_X, num_bytes)
 
