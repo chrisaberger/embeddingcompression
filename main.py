@@ -20,7 +20,10 @@ elif args.col_bucketer == "kmeans":
     col_bucketer = bucketers.KmeansColBucketer(args.num_col_buckets)
 
 if args.quantizer == "uniform":
-    quantizer = quantizers.uniform.UniformQuantizer(args.num_bits)
+    quantizer = quantizers.UniformQuantizer(args.num_bits)
+elif args.quantizer == "kmeans":
+    quantizer = quantizers.KmeansQuantizer(args.num_centroids)
+
 """
 Run the bucketing algorithms! The bucketing algorithms are always run by running
 the 'row_bucketer' first then by running the 'col_bucketer' second. If you must

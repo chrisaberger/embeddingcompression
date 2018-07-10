@@ -33,7 +33,7 @@ def parse_arguments():
         action="store",
         default="uniform",
         type=str,
-        choices=["uniform"],
+        choices=["uniform", "kmeans"],
         help="Quantization strategy.")
     parser.add_argument(
         "--num_row_buckets",
@@ -54,7 +54,7 @@ def parse_arguments():
         type=int,
         help="Number of bits for uniform quantization.")
     parser.add_argument(
-        "--num_centorids",
+        "--num_centroids",
         action="store",
         default=2,
         type=int,
