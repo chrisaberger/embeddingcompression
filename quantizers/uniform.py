@@ -50,6 +50,7 @@ class UniformQuantizer(Quantizer):
         # Actually quantize.
         compressed_X = _quantize(X, num_bits, sf)
         total_bytes = (compressed_X.size * num_bits) / 8
+        total_bytes += (32 / 8) * 2 # store scale factor and center
 
         # Recenter and return.
         compressed_X += center

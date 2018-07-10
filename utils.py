@@ -19,7 +19,7 @@ def parse_arguments():
         action="store",
         default="uniform",
         type=str,
-        choices=["uniform"],
+        choices=["uniform", "kmeans"],
         help="Row bucketing strategy.")
     parser.add_argument(
         "--col_bucketer",
@@ -92,7 +92,7 @@ def load_embeddings(filename):
 def print_stats(X, q_X, n_bytes):
     print()
     print("Bytes Requried: " + str(n_bytes))
-    print("Compression Ratio: " + str(X.size * 4))
+    print("Compression Ratio: " + str( (X.size * 4)/n_bytes ))
     print("Frobenius Norm of Original Matrix: " + str(np.linalg.norm(X)))
     print("Frobenius Norm of Compressed Matrix: " + str(np.linalg.norm(q_X)))
     print()
