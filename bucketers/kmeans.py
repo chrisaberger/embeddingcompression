@@ -26,6 +26,7 @@ class KmeansRowBucketer(Bucketer):
 
         # Run kmeans to determine the buckets.
         t0 = time.time()
+        print("Running Kmeans to bucket rows...")
         kmeans = KMeans(n_clusters=self.num_buckets).fit(X)
         print("KMeans Bucket Rows Time: " + str(time.time() - t0))
 
