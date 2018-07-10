@@ -1,4 +1,5 @@
 import numpy as np
+from .quantizer import Quantizer 
 
 def _quantize(data, num_bits, scale_factor, biased=False):
     if not biased:
@@ -11,7 +12,7 @@ def _quantize(data, num_bits, scale_factor, biased=False):
     data = np.clip(data, min_value, max_value)
     return data * scale_factor
 
-class UniformQuantizer:
+class UniformQuantizer(Quantizer):
     def __init__(self, num_bits):
         self.num_bits = num_bits
 
