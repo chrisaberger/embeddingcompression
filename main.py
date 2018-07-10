@@ -1,285 +1,40 @@
-import pandas as pd
-import numpy as np
-from sklearn.cluster import KMeans
-import time
-import sys
-from tqdm import tqdm
-import os
-import argparse
 import utils
-import driver
+import core
 import quantizers
 import bucketers
 
-def bucket_rows(X, n_buckets):
-    t0 = time.time()
-
-    # Run kmeans to determine the buckets.
-    kmeans = KMeans(n_clusters=n_buckets).fit(X)
-    print("KMeans Bucket Rows Time: " + str(time.time() - t0))
-
-    # Create the buckets and sort the vocabulary.
-    buckets = {}
-    index_buckets = {}    # original row index mapping
-    new_V = []
-    for i in range(len(kmeans.labels_)):
-        label = kmeans.labels_[i]
-        if label not in buckets:
-            buckets[label] = [X[i, :]]
-            index_buckets[label] = [i]
-        else:
-            buckets[label].append(X[i, :])
-            index_buckets[label].append(i)
-    """
-    print(kmeans.cluster_centers_[0])
-    for i in range(n_buckets):
-        print(i)
-        print(np.array(index_buckets[i]))
-    """
-    return buckets, index_buckets
-
-
-def columnwise_kmean_compression(X, num_centroids_per_column):
-    X_t = np.transpose(X)
-    compressed_X_t = np.zeros(X_t.shape)
-    for i in tqdm(range(X_t.shape[0])):
-        row = X_t[i, :]
-        kmeans = KMeans(n_clusters=num_centroids_per_column)\
-                                            .fit(row.reshape(-1, 1))
-        compressed_X_t[i, :] = kmeans.cluster_centers_[kmeans.labels_] \
-                                        .reshape(1, compressed_X_t.shape[1])
-    return np.transpose(compressed_X_t)
-
-def bucketed_columnwise_kmeans(vocab, embedding, num_buckets,
-                               num_centroids_per_column):
-    # Bucket method
-    buckets, index_buckets = bucket_rows(embedding, num_buckets)
-    compressed_embedding = None
-    new_vocab = None
-    for index in buckets:
-        bucket = np.array(buckets[index])
-        new_vals = columnwise_kmean_compression(bucket,
-                                                num_centroids_per_column)
-        new_vocab_words = vocab[np.array(index_buckets[index])].as_matrix()
-        if compressed_embedding is None:
-            compressed_embedding = new_vals
-            new_vocab = new_vocab_words
-        else:
-            compressed_embedding = np.concatenate((compressed_embedding,
-                                                   new_vals))
-            new_vocab = np.concatenate((new_vocab, new_vocab_words))
-
-    compressed_embedding = np.array(compressed_embedding)
-    new_vocab = np.array(new_vocab)
-
-    print(compressed_embedding.shape)
-    compressed_embedding = np.array(compressed_embedding)
-
-    # In each bucket there is a codebook for every column.
-    num_codebooks = num_buckets * embedding.shape[1]
-    # Codebook stores 'num_centroids_per_column' FP32 numbers.
-    codebook_bytes = (32 * num_centroids_per_column) / 8
-    # We need to store offsets to figure out where each bucket starts in the
-    # matrix. Store (start_index, bucket_number) per bucket.
-    # The bucket number actually only requires log2(num_buckets) bits. Store
-    # the start_index as a 32 bit integer. Binary search in this structure
-    # given an index to find what bucket you are in.
-    codebook_offset_bytes = ((num_buckets + 1) *
-                             (32 + num_bits_needed(num_buckets))) / 8
-    total_codebook_bytes = (
-        num_codebooks * codebook_bytes) + codebook_offset_bytes
-    entry_bytes = (num_bits_needed(num_centroids_per_column
-                                  ) * compressed_embedding.size) / 8
-
-    total_bytes = entry_bytes + total_codebook_bytes
-    print_stats(compressed_embedding, total_bytes, frob_norm)
-
-    filename = "bucketwise_" + str(total_bytes) + "bytes_" \
-                + str(num_buckets) + "buckets_" \
-                + str(num_centroids_per_column) + "_centroids.txt"
-
-    to_file(filename, new_vocab, compressed_embedding)
-
-
-def columnwise_kmeans(vocab, embedding, num_centroids_per_column):
-    compressed_embedding = columnwise_kmean_compression(
-        embedding, num_centroids_per_column)
-
-    # Compute how much memory is needed.
-    num_codebooks = embedding.shape[1]
-    codebook_bytes = (32 * num_centroids_per_column) / 8
-    total_codebook_bytes = num_codebooks * codebook_bytes
-    entry_bytes = (num_bits_needed(num_centroids_per_column
-                                  ) * compressed_embedding.size) / 8
-    total_bytes = total_codebook_bytes + entry_bytes
-    print_stats(compressed_embedding, total_bytes, frob_norm)
-
-    filename = "columnwise_" + str(total_bytes) + "bytes_" + str(
-        num_centroids_per_column) + "centroids.txt"
-    to_file(filename, vocab.as_matrix(), compressed_embedding)
-
-
-def rowwise_kmeans(vocab, X, num_centroids):
-    t0 = time.time()
-
-    # Run kmeans to determine the buckets.
-    kmeans = KMeans(n_clusters=num_centroids).fit(X)
-    print("KMeans Bucket Rows Time: " + str(time.time() - t0))
-
-    compressed_X = kmeans.cluster_centers_[kmeans.labels_]
-    print(compressed_X.shape)
-
-    # Compute how much memory is needed.
-    num_codebooks = num_centroids
-    codebook_bytes = (32 * embedding.shape[1]) / 8
-    total_codebook_bytes = num_codebooks * codebook_bytes
-    entry_bytes = (num_bits_needed(num_centroids) * compressed_X.size) / 8
-    total_bytes = total_codebook_bytes + entry_bytes
-    print_stats(compressed_X, total_bytes, frob_norm)
-
-    filename = "rowwise_" + str(total_bytes) + "bytes_" + str(
-        num_centroids) + "centroids.txt"
-    to_file(filename, vocab.as_matrix(), compressed_X)
-
-
-def kmeans(vocab, X, num_centroids):
-    t0 = time.time()
-
-    # Run kmeans to determine the buckets.
-    kmeans = KMeans(n_clusters=num_centroids).fit(X.reshape(-1, 1))
-    print("KMeans Bucket Rows Time: " + str(time.time() - t0))
-
-    compressed_X = kmeans.cluster_centers_[kmeans.labels_].reshape(X.shape)
-    print(compressed_X.shape)
-
-    # Compute how much memory is needed.
-    codebook_bytes = (32 * num_centroids) / 8
-    entry_bytes = (num_bits_needed(num_centroids) * compressed_X.size) / 8
-    total_bytes = codebook_bytes + entry_bytes
-    print_stats(compressed_X, total_bytes, frob_norm)
-
-    filename = "kmeans_" + str(total_bytes) + "bytes_" + str(
-        num_centroids) + "centroids.txt"
-    to_file(filename, vocab.as_matrix(), compressed_X)
-
-def col_quantization(vocab, X, num_bits):
-    centers = []
-    compressed_X = np.zeros(X.shape)
-    for i in range(X.shape[1]):
-        col = X[:, i]
-
-        min_val = np.amin(col)
-        max_val = np.amax(col)
-
-        center = (max_val - min_val) / 2
-        center = max_val - center
-        centers.append(center)
-
-        col = col - center
-        min_val = min_val - center
-        max_val = max_val - center
-
-        min_bit_value = -1 * (2**(num_bits - 1))
-        max_bit_value = 2**(num_bits - 1) - 1
-
-        sf_max = max_val / max_bit_value
-        sf_min = min_val / min_bit_value
-
-        sf = max(sf_min, sf_max)
-        compressed_col = quantize(col, num_bits, sf)
-        compressed_col += center
-        compressed_X[:, i] = compressed_col
-
-    total_bytes = (compressed_X.size * num_bits) / 8
-    # store a scale factor and center
-    col_data_bytes = ((32 * 2) * X.shape[1]) / 8
-    total_bytes += col_data_bytes
-    print_stats(compressed_X, total_bytes, frob_norm)
-
-    filename = "colquant_" + str(total_bytes) + "bytes_" + str(
-        num_bits) + "bits.txt"
-    to_file(filename, vocab.as_matrix(), compressed_X)
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "-f",
-    "--filename",
-    action="store",
-    type=str,
-    required=True,
-    help="Path to input embeddngs file (in GloVe format).")
-parser.add_argument(
-    "--num_buckets",
-    action="store",
-    default=100,
-    type=int,
-    help="Number of buckets for bucketed columnwise kmeans.")
-parser.add_argument(
-    "-c",
-    "--num_centroids",
-    action="store",
-    default=2,
-    type=int,
-    help="Number of centroids kmeans.")
-parser.add_argument(
-    "-b",
-    "--num_bits",
-    action="store",
-    default=5,
-    type=int,
-    help="Number of bits for quantization.")
-parser.add_argument(
-    "--algo",
-    action="store",
-    default="all",
-    type=str,
-    choices=[
-        "kmeans_bucketed_col", "kmeans_col", "kmeans_row", "kmeans", "quant",
-        "quant_col", "quant_bucketed_col", "all"
-    ],
-    help="Solver/optimization algorithm.")
-args = parser.parse_args()
-
-print(args)
-
+args = utils.parse_arguments()
 vocab, embedding = utils.load_embeddings(args.filename)
+"""
+Based on the user input declear RowBucketer, ColBucketer, and Quantizer 
+objects.
+"""
+if args.row_bucketer == "uniform":
+    row_bucketer = bucketers.uniform.UniformRowBucketer(args.num_row_buckets)
 
-row_bucketer = bucketers.full.FullRowBucketer()
-col_bucketer = bucketers.full.FullColBucketer()
-## TODO Return the number of bytes required for a column reorder.
-quantizer = quantizers.uniform.UniformQuantizer(args.num_bits)
+if args.col_bucketer == "uniform":
+    col_bucketer = bucketers.uniform.UniformColBucketer(args.num_col_buckets)
 
-buckets, row_reorder, col_reorder = driver.bucket(row_bucketer, col_bucketer, embedding)
-q_buckets, num_bytes = driver.quantize(buckets, quantizer)
+if args.quantizer == "uniform":
+    quantizer = quantizers.uniform.UniformQuantizer(args.num_bits)
+"""
+Run the bucketing algorithms! The bucketing algorithms are always run by running
+the 'row_bucketer' first then by running the 'col_bucketer' second. If you must
+run in the other order take the transpose of the embedding before this method.
+TODO add code that takes the transpose in the 'core.finish' method. 
+"""
+buckets, row_reorder, col_reorder = core.bucket(row_bucketer, col_bucketer,
+                                                embedding)
+
+# Run the quantization scheme inside of each bucket.
+q_buckets, num_bytes = core.quantize(buckets, quantizer)
+"""
+Extra bytes are needed when columns are reordered. We are free to reorder rows
+but when we reorder columns we must maintain information to get us back to the 
+original order. 
+"""
 num_bytes += col_bucketer.extra_bytes_needed()
-
-filename = utils.get_filename(row_bucketer, col_bucketer, quantizer, num_bytes)
-driver.finish(q_buckets, num_bytes, embedding, vocab, row_reorder, col_reorder, filename)
-
-#print(buckets)
-#print(q_buckets)
-
-exit()
-
-frob_norm = utils.print_stats(embedding, embedding.size * 4)
-
-if args.algo == "kmeans_bucketed_col" or args.algo == "all":
-    print("Running bucketed columnwise kmeans...")
-    bucketed_columnwise_kmeans(vocab, embedding, args.num_buckets,
-                               args.num_centroids)
-if args.algo == "kmeans_col" or args.algo == "all":
-    print("Running columnwise kmeans...")
-    columnwise_kmeans(vocab, embedding, args.num_centroids)
-if args.algo == "kmeans_row" or args.algo == "all":
-    print("Running rowwise kmeans...")
-    rowwise_kmeans(vocab, embedding, args.num_centroids)
-if args.algo == "kmeans" or args.algo == "all":
-    print("Running kmeans quantization...")
-    kmeans(vocab, embedding, args.num_centroids)
-if args.algo == "quant" or args.algo == "all":
-    print("Running naive quantization...")
-    quant_uniform_bucketing_none(vocab, embedding, args.num_bits)
-if args.algo == "quant_col" or args.algo == "all":
-    print("Running column quantization...")
-    col_quantization(vocab, embedding, args.num_bits)
+filename = utils.create_filename(row_bucketer, col_bucketer, quantizer,
+                                 num_bytes)
+core.finish(q_buckets, num_bytes, embedding, vocab, row_reorder, col_reorder,
+            filename)

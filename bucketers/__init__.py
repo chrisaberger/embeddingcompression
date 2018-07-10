@@ -1,1 +1,1 @@
-from .full import *
+from .uniform import *

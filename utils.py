@@ -1,6 +1,74 @@
 import numpy as np
 import pandas as pd
 import os
+import argparse
+import configparser
+
+
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-f",
+        "--filename",
+        action="store",
+        type=str,
+        required=True,
+        help="Path to input embeddngs file (in GloVe format).")
+    parser.add_argument(
+        "--row_bucketer",
+        action="store",
+        default="uniform",
+        type=str,
+        choices=["uniform"],
+        help="Row bucketing strategy.")
+    parser.add_argument(
+        "--col_bucketer",
+        action="store",
+        default="uniform",
+        type=str,
+        choices=["uniform"],
+        help="Column bucketing strategy.")
+    parser.add_argument(
+        "--quantizer",
+        action="store",
+        default="uniform",
+        type=str,
+        choices=["uniform"],
+        help="Quantization strategy.")
+    parser.add_argument(
+        "--num_row_buckets",
+        action="store",
+        default=1,
+        type=int,
+        help="Number of row buckets.")
+    parser.add_argument(
+        "--num_col_buckets",
+        action="store",
+        default=1,
+        type=int,
+        help="Number of col buckets.")
+    parser.add_argument(
+        "--num_bits",
+        action="store",
+        default=5,
+        type=int,
+        help="Number of bits for uniform quantization.")
+    parser.add_argument(
+        "--num_centorids",
+        action="store",
+        default=2,
+        type=int,
+        help="Number of centroids for kmeans quantization.")
+    args = parser.parse_args()
+    print(args)
+    return args
+
+
+def load_config(filename):
+    config = configparser.ConfigParser()
+    config.read(filename)
+    return config
+
 
 def load_embeddings(filename):
     """
@@ -20,24 +88,22 @@ def load_embeddings(filename):
     print("Embedding shape: " + str(embedding.shape))
     return vocab, embedding
 
-def print_stats(X, n_bytes, baseline_frob_norm=None):
-    frob_norm = np.linalg.norm(X)
-    one_d_X = X.flatten()
+
+def print_stats(X, q_X, n_bytes):
     print()
     print("Bytes Requried: " + str(n_bytes))
-    print("Frobenius Norm of Matrix: " + str(frob_norm))
-    print("Mean of Matrix: " + str(np.mean(one_d_X)))
-    print("Standard Deviation of Matrix: " + str(np.std(one_d_X)))
-    if baseline_frob_norm is not None:
-        print("Frob norm diff: " + str(np.abs(frob_norm - baseline_frob_norm)))
+    print("Compression Ratio: " + str(X.size * 4))
+    print("Frobenius Norm of Original Matrix: " + str(np.linalg.norm(X)))
+    print("Frobenius Norm of Compressed Matrix: " + str(np.linalg.norm(q_X)))
     print()
-    return frob_norm
 
-def get_filename(row_bucketer, col_bucketer, quantizer, num_bytes):
+
+def create_filename(row_bucketer, col_bucketer, quantizer, num_bytes):
     return "q" + quantizer.name()\
             + "_r" + row_bucketer.name()\
             + "_c" + col_bucketer.name()\
             + "_bytes" + str(num_bytes) + ".txt"
+
 
 def to_file(filename, V, X):
     if not os.path.exists("outputs"):
