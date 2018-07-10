@@ -14,27 +14,22 @@ class UniformRowBucketer:
         return "uniform"
 
     def bucket(self, X):
-        assert(self.num_buckets <= X.shape[0])
+        assert (self.num_buckets <= X.shape[0])
         """ 
         Returns buckets and the original indexes of each row in each bucket.
         """
         row_bucket = []
-        row_bucket_indexes = None
-        bucket_size = int( X.shape[0] / self.num_buckets ) + 1
+        bucket_size = int(X.shape[0] / self.num_buckets) + 1
         bucket_remainder = X.shape[0] % self.num_buckets
         cur_start_index = 0
         for i in range(self.num_buckets):
             if i == bucket_remainder:
                 bucket_size -= 1
-            start, end = cur_start_index, cur_start_index+bucket_size
+            start, end = cur_start_index, cur_start_index + bucket_size
             end = X.shape[0] if end > X.shape[0] else end
             row_bucket.append(X[start:end, :])
-            if row_bucket_indexes is None:
-                row_bucket_indexes = np.arange(start, end)
-            else:
-                np.concatenate((row_bucket_indexes, np.arange(start, end)))
             cur_start_index = end
-        return row_bucket, row_bucket_indexes
+        return row_bucket, np.arange(X.shape[0])
 
 
 class UniformColBucketer:
@@ -49,14 +44,14 @@ class UniformColBucketer:
         return 0
 
     def bucket(self, row_buckets, X):
-        assert(self.num_buckets <= X.shape[1])
+        assert (self.num_buckets <= X.shape[1])
         """ 
         Returns buckets and the original indexes of each column in each bucket.
         """
         final_buckets = []
         col_indexes = None
 
-        bucket_size_original = int( X.shape[1] / self.num_buckets ) + 1
+        bucket_size_original = int(X.shape[1] / self.num_buckets) + 1
         bucket_remainder = X.shape[1] % self.num_buckets
         for bucket in row_buckets:
             col_bucket = []
@@ -68,10 +63,6 @@ class UniformColBucketer:
                 start, end = cur_start_index, cur_start_index + bucket_size
                 end = X.shape[1] if end > X.shape[1] else end
                 col_bucket.append(bucket[:, start:end])
-                if col_indexes is None:
-                    col_indexes = np.arange(start, end)
-                else:
-                    col_indexes = np.concatenate((col_indexes, np.arange(start, end)))
                 cur_start_index = end
             final_buckets.append(col_bucket)
-        return final_buckets, col_indexes
+        return final_buckets, np.arange(X.shape[1])
