@@ -20,7 +20,9 @@ class UniformQuantizer(Quantizer):
         return "uniform" + str(self.num_bits) + "b"
 
     def quantize(self, X):
-        num_bits = self.num_bits
+        total_bytes = (X.size * self.num_bits) / 8
+        total_bytes += (32 / 8) * 2 # store scale factor and center
+
         # Determine the center.
         min_val = np.amin(X)
         max_val = np.amax(X)
@@ -34,23 +36,27 @@ class UniformQuantizer(Quantizer):
         max_val = max_val - center
 
         # Max and min values allowed with this number of bits.
-        min_bit_value = -1 * (2**(num_bits - 1))
-        max_bit_value = 2**(num_bits - 1) - 1
+        min_bit_value = -1 * (2**(self.num_bits - 1))
+        max_bit_value = 2**(self.num_bits - 1) - 1
 
         # Determine scale factors needed to capture range.
         if max_bit_value == 0:
             sf_max = max_val
         else:
             sf_max = max_val / max_bit_value
-        sf_min = min_val / min_bit_value
+        if min_bit_value == 0:
+            sf_min = min_val
+        else:
+            sf_min = min_val / min_bit_value
 
         # Select larger of the two scale factors.
         sf = max(sf_min, sf_max)
 
+        if sf == 0.0:
+            return np.zeros(X.shape)+center, total_bytes
+
         # Actually quantize.
-        compressed_X = _quantize(X, num_bits, sf)
-        total_bytes = (compressed_X.size * num_bits) / 8
-        total_bytes += (32 / 8) * 2 # store scale factor and center
+        compressed_X = _quantize(X, self.num_bits, sf)
 
         # Recenter and return.
         compressed_X += center

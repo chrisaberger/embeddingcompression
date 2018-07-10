@@ -77,6 +77,7 @@ def finish(buckets, num_bytes, X, V, row_reorder, col_reorder, filename):
 
         # Sort the buffer by the 'col_reorder' index.
         reconstructed_bucket = reconstructed_bucket[:, col_reorder[i]]
+
         # Place it into our final buffer after it is sorted.
         compressed_X[row_start:row_end, :] = reconstructed_bucket
 
