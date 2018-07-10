@@ -49,12 +49,14 @@ def finish(buckets, num_bytes, X, V, row_reorder, col_reorder, filename):
         for j in range(len(buckets[i])):
             # sort back by col_reorder index
             # stitch into large 'reconstructed' matrix.
+            bucket = buckets[i][j]
             if reconstructed_bucket is None:
-                reconstructed_bucket = buckets[i][j]
+                reconstructed_bucket = bucket
             else:
                 reconstructed_bucket = np.append(
-                    reconstructed_bucket, buckets[i][j], axis=1)
+                    reconstructed_bucket, bucket, axis=1)
 
+        reconstructed_bucket = reconstructed_bucket[:, col_reorder[i]]
         if compressed_X is None:
             compressed_X = reconstructed_bucket
         else:
@@ -62,9 +64,6 @@ def finish(buckets, num_bytes, X, V, row_reorder, col_reorder, filename):
 
     print(compressed_X.shape)
     compressed_X = np.copy(compressed_X, order="F")
-    print("Reodering cols...")
-    compressed_X = compressed_X[:, col_reorder]
-    print(compressed_X.shape)
 
     # reorder the 'reconstructed' matrix. by row reorder
     print("Reodering rows...")

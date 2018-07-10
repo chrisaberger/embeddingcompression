@@ -26,7 +26,7 @@ def parse_arguments():
         action="store",
         default="uniform",
         type=str,
-        choices=["uniform"],
+        choices=["uniform", "kmeans"],
         help="Column bucketing strategy.")
     parser.add_argument(
         "--quantizer",

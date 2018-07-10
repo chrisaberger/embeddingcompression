@@ -15,7 +15,11 @@ class KmeansRowBucketer(Bucketer):
         self.num_buckets = num_buckets
 
     def name(self):
-        return "uniform"
+        return "kmeans"
+
+    def extra_bytes_needed(self):
+        # Just need to store the offset for each bucket.
+        return self.num_buckets * 4
 
     def bucket(self, X):
         assert (self.num_buckets <= X.shape[0])
@@ -45,3 +49,34 @@ class KmeansRowBucketer(Bucketer):
             bucket_index[label] += 1
 
         return buckets, final_indexes
+
+
+class KmeansColBucketer(Bucketer):
+
+    def __init__(self, num_buckets):
+        self.num_buckets = num_buckets
+
+    def name(self):
+        return "kmean"
+
+    def extra_bytes_needed(self):
+        # In each bucket you need a mapping back to the original column order.
+        return self.num_buckets * self.num_cols * 4 
+
+    def bucket(self, row_buckets, X):
+        self.num_cols = X.shape[1]
+        final_indexes = []
+        final_buckets = []
+        for bucket in row_buckets:
+            transposed_bucket = np.transpose(bucket)
+            rowBucketer = KmeansRowBucketer(self.num_buckets)
+            col_buckets, col_indexes = rowBucketer.bucket(transposed_bucket)
+            for i in range(len(col_buckets)):
+                col_buckets[i] = np.transpose(col_buckets[i])
+            final_indexes.append(col_indexes)
+            final_buckets.append(col_buckets)
+        return final_buckets, final_indexes
+
+
+
+

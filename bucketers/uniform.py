@@ -10,6 +10,9 @@ class UniformRowBucketer(Bucketer):
     def __init__(self, num_buckets):
         self.num_buckets = num_buckets
 
+    def extra_bytes_needed(self):
+        return 0
+
     def name(self):
         return "uniform"
 
@@ -49,6 +52,7 @@ class UniformColBucketer:
         Returns buckets and the original indexes of each column in each bucket.
         """
         final_buckets = []
+        final_indexes = []
         col_indexes = None
 
         bucket_size_original = int(X.shape[1] / self.num_buckets) + 1
@@ -65,4 +69,5 @@ class UniformColBucketer:
                 col_bucket.append(bucket[:, start:end])
                 cur_start_index = end
             final_buckets.append(col_bucket)
-        return final_buckets, np.arange(X.shape[1])
+            final_indexes.append(np.arange(X.shape[1]))
+        return final_buckets, final_indexes

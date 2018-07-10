@@ -15,7 +15,9 @@ elif args.row_bucketer == "kmeans":
     row_bucketer = bucketers.KmeansRowBucketer(args.num_row_buckets)
 
 if args.col_bucketer == "uniform":
-    col_bucketer = bucketers.uniform.UniformColBucketer(args.num_col_buckets)
+    col_bucketer = bucketers.UniformColBucketer(args.num_col_buckets)
+elif args.col_bucketer == "kmeans":
+    col_bucketer = bucketers.KmeansColBucketer(args.num_col_buckets)
 
 if args.quantizer == "uniform":
     quantizer = quantizers.uniform.UniformQuantizer(args.num_bits)
@@ -35,6 +37,7 @@ Extra bytes are needed when columns are reordered. We are free to reorder rows
 but when we reorder columns we must maintain information to get us back to the 
 original order. 
 """
+num_bytes += row_bucketer.extra_bytes_needed()
 num_bytes += col_bucketer.extra_bytes_needed()
 filename = utils.create_filename(row_bucketer, col_bucketer, quantizer,
                                  num_bytes)
