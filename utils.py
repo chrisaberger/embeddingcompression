@@ -122,6 +122,10 @@ def create_filename(row_bucketer, col_bucketer, quantizer, num_bytes):
 
 def to_file(filename, V, X):
 
+    if not os.path.exists("outputs"):
+        os.makedirs("outputs")
+    filename = os.path.join("outputs", filename)
+
     from io import StringIO
     npy_mat = X
     words = V
