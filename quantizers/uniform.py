@@ -59,7 +59,7 @@ class UniformQuantizer(Quantizer):
             return np.zeros(X.shape) + center, total_bytes
 
         # Actually quantize.
-        compressed_X = _quantize(X, self.num_bits, sf)
+        compressed_X = _quantize(X_recentered, self.num_bits, sf)
 
         # Recenter and return.
         compressed_X += center
