@@ -39,9 +39,9 @@ def parse_arguments():
     parser.add_argument(
         "--quantizer",
         action="store",
-        default="uniform",
+        default="uniform_fp",
         type=str,
-        choices=["uniform", "kmeans"],
+        choices=["uniform_fp", "kmeans", "uniform_mt"],
         help="Quantization strategy.")
     parser.add_argument(
         "--num_row_buckets",
@@ -83,12 +83,13 @@ def load_embeddings(filename):
     Loads a GloVe embedding at 'filename'. Returns a vector of strings that 
     represents the vocabulary and a 2-D numpy matrix that is the embeddings. 
     """
+    converter={0:np.str}
     csv.field_size_limit(sys.maxsize)
     df = pd.read_csv(
         filename,
         sep=' ',
         header=None,
-        dtype={0: np.str},
+        converters=converter,
         keep_default_na=False,
         engine='python',
         quoting=csv.QUOTE_NONE,
