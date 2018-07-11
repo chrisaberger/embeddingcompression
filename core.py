@@ -76,10 +76,12 @@ def finish(buckets, num_bytes, X, V, row_reorder, col_reorder, filename):
             col_start = col_end
 
         # Sort the buffer by the 'col_reorder' index.
-        reconstructed_bucket = reconstructed_bucket[:, col_reorder[i]]
+        new_x = np.zeros(reconstructed_bucket.shape)
+        for c_i in range(len(col_reorder[i])):
+            new_x[:, col_reorder[i][c_i]] = reconstructed_bucket[:, c_i]
 
         # Place it into our final buffer after it is sorted.
-        compressed_X[row_start:row_end, :] = reconstructed_bucket
+        compressed_X[row_start:row_end, :] = new_x
 
         row_start = row_end
 
