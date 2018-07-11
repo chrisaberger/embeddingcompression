@@ -23,7 +23,6 @@ if args.quantizer == "uniform":
     quantizer = quantizers.UniformQuantizer(args.num_bits)
 elif args.quantizer == "kmeans":
     quantizer = quantizers.KmeansQuantizer(args.num_centroids)
-
 """
 Run the bucketing algorithms! The bucketing algorithms are always run by running
 the 'row_bucketer' first then by running the 'col_bucketer' second. If you must
@@ -44,5 +43,6 @@ num_bytes += row_bucketer.extra_bytes_needed()
 num_bytes += col_bucketer.extra_bytes_needed()
 filename = utils.create_filename(row_bucketer, col_bucketer, quantizer,
                                  num_bytes)
+print("Output filename: " + filename)
 core.finish(q_buckets, num_bytes, embedding, vocab, row_reorder, col_reorder,
             filename)

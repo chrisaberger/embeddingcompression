@@ -1,5 +1,6 @@
 import numpy as np
-from .quantizer import Quantizer 
+from .quantizer import Quantizer
+
 
 def _quantize(data, num_bits, scale_factor, biased=False):
     if not biased:
@@ -12,7 +13,9 @@ def _quantize(data, num_bits, scale_factor, biased=False):
     data = np.clip(data, min_value, max_value)
     return data * scale_factor
 
+
 class UniformQuantizer(Quantizer):
+
     def __init__(self, num_bits):
         self.num_bits = num_bits
 
@@ -21,7 +24,7 @@ class UniformQuantizer(Quantizer):
 
     def quantize(self, X):
         total_bytes = (X.size * self.num_bits) / 8
-        total_bytes += (32 / 8) * 2 # store scale factor and center
+        total_bytes += (32 / 8) * 2    # store scale factor and center
 
         # Determine the center.
         min_val = np.amin(X)
@@ -53,7 +56,7 @@ class UniformQuantizer(Quantizer):
         sf = max(sf_min, sf_max)
 
         if sf == 0.0:
-            return np.zeros(X.shape)+center, total_bytes
+            return np.zeros(X.shape) + center, total_bytes
 
         # Actually quantize.
         compressed_X = _quantize(X, self.num_bits, sf)

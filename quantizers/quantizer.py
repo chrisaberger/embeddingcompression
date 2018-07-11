@@ -1,4 +1,5 @@
 class Quantizer:
+
     def __init__(self):
         raise NotImplementedError
 
