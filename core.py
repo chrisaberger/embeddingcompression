@@ -97,4 +97,4 @@ def finish(buckets, num_bytes, X, V, row_reorder, col_reorder, filename):
     # Print stats and send to file.
     utils.print_stats(X, compressed_X, num_bytes)
 
-    utils.to_file(filename, V, compressed_X)
+    utils.to_file(filename, V.as_matrix(), compressed_X)

@@ -74,7 +74,7 @@ def load_embeddings(filename):
     """
     Loads a GloVe embedding at 'filename'. Returns a vector of strings that 
     represents the vocabulary and a 2-D numpy matrix that is the embeddings. 
-    
+    """
     df = pd.read_csv(
         filename,
         sep=' ',
@@ -84,21 +84,6 @@ def load_embeddings(filename):
         na_values=[''])
     vocab = df[df.columns[0]]
     embedding = df.drop(df.columns[0], axis=1).as_matrix()
-    """
-
-    f = open(filename, 'r')
-    rows_txt = f.read().split('\n')
-    rows_vect = []
-    vocabs = []
-    for r in rows_txt:
-        if r != '':
-            row = r.split(' ')
-            vocabs.append(row[0])
-            rows_vect.append([float(num) for num in row[1:]])
-
-    embedding = np.array(rows_vect) 
-    vocab = vocabs 
-         
 
     print("Embedding shape: " + str(embedding.shape))
     return vocab, embedding
@@ -121,25 +106,6 @@ def create_filename(row_bucketer, col_bucketer, quantizer, num_bytes):
 
 
 def to_file(filename, V, X):
-
-    if not os.path.exists("outputs"):
-        os.makedirs("outputs")
-    filename = os.path.join("outputs", filename)
-
-    from io import StringIO
-    npy_mat = X
-    words = V
-    matstr = StringIO()
-    np.savetxt(matstr, npy_mat,fmt='%.12f')
-    matslist = matstr.getvalue().split('\n')
-    embslist = list(zip(words,matslist))
-    txtembs_list = [i[0]+' '+i[1] for i in embslist]
-    f = open(filename, 'w')
-    f.write('\n'.join(txtembs_list))
-    f.close() 
-
-
-    '''
     if not os.path.exists("outputs"):
         os.makedirs("outputs")
     filename = os.path.join("outputs", filename)
@@ -148,7 +114,7 @@ def to_file(filename, V, X):
     pdv.rename(columns={0: 'v'}, inplace=True)
     result = pdv.join(pd.DataFrame(X))
     result.to_csv(filename, sep=' ', index=False, header=False)
-    '''
+
 
 def num_bits_needed(number):
     return np.ceil(np.log2(number))
