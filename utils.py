@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 import os
 import argparse
-import configparser
-
+import csv
+import sys
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
@@ -75,12 +75,15 @@ def load_embeddings(filename):
     Loads a GloVe embedding at 'filename'. Returns a vector of strings that 
     represents the vocabulary and a 2-D numpy matrix that is the embeddings. 
     """
+    csv.field_size_limit(sys.maxsize)
     df = pd.read_csv(
         filename,
         sep=' ',
         header=None,
         dtype={0: np.str},
         keep_default_na=False,
+        engine='python',
+        quoting=csv.QUOTE_NONE,
         na_values=[''])
     vocab = df[df.columns[0]]
     embedding = df.drop(df.columns[0], axis=1).as_matrix()
