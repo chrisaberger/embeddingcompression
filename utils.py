@@ -2,7 +2,8 @@ import numpy as np
 import pandas as pd
 import os
 import argparse
-import configparser
+import csv
+import sys
 
 
 def parse_arguments():
@@ -14,6 +15,13 @@ def parse_arguments():
         type=str,
         required=True,
         help="Path to input embeddngs file (in GloVe format).")
+    parser.add_argument(
+        "-o",
+        "--output_folder",
+        action="store",
+        default="outputs",
+        type=str,
+        help="Folder to output embeddings to.")
     parser.add_argument(
         "--row_bucketer",
         action="store",
@@ -75,12 +83,15 @@ def load_embeddings(filename):
     Loads a GloVe embedding at 'filename'. Returns a vector of strings that 
     represents the vocabulary and a 2-D numpy matrix that is the embeddings. 
     """
+    csv.field_size_limit(sys.maxsize)
     df = pd.read_csv(
         filename,
         sep=' ',
         header=None,
         dtype={0: np.str},
         keep_default_na=False,
+        engine='python',
+        quoting=csv.QUOTE_NONE,
         na_values=[''])
     vocab = df[df.columns[0]]
     embedding = df.drop(df.columns[0], axis=1).as_matrix()
@@ -98,17 +109,23 @@ def print_stats(X, q_X, n_bytes):
     print()
 
 
-def create_filename(row_bucketer, col_bucketer, quantizer, num_bytes):
-    return "q" + quantizer.name()\
+def create_filename(output_folder, input_filename, row_bucketer, col_bucketer,
+                    quantizer, num_bytes):
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    output_folder = os.path.join(output_folder,
+                                 os.path.basename(input_filename))
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    filename = "q" + quantizer.name()\
             + "_r" + row_bucketer.name()\
             + "_c" + col_bucketer.name()\
             + "_bytes" + str(num_bytes) + ".txt"
+    return os.path.join(output_folder, filename)
 
 
 def to_file(filename, V, X):
-    if not os.path.exists("outputs"):
-        os.makedirs("outputs")
-    filename = os.path.join("outputs", filename)
 
     pdv = pd.DataFrame(V)
     pdv.rename(columns={0: 'v'}, inplace=True)
