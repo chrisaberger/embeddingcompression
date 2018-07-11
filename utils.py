@@ -88,6 +88,7 @@ def load_embeddings(filename):
         filename,
         sep=' ',
         header=None,
+        dtype={0: np.str},
         keep_default_na=False,
         engine='python',
         quoting=csv.QUOTE_NONE,
