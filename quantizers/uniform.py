@@ -3,17 +3,16 @@ from .quantizer import Quantizer
 
 
 class UniformQuantizer(Quantizer):
-
     def __init__(self, num_bits):
         self.num_bits = num_bits
-    
+
     def get_total_bytes(self, X):
         total_bytes = (X.size * self.num_bits) / 8
-        total_bytes += (32/8) * 2 #store scale factor and center  
-        return total_bytes     
+        total_bytes += (32 / 8) * 2  #store scale factor and center
+        return total_bytes
+
 
 class FixedPointQuantizer(UniformQuantizer):
-
     def name(self):
         return "uniform_fp" + str(self.num_bits) + "b"
 
@@ -69,21 +68,21 @@ class FixedPointQuantizer(UniformQuantizer):
         # Recenter and return.
         compressed_X += center
 
-        return compressed_X, total_bytes  
+        return compressed_X, total_bytes
+
 
 class MidtreadQuantizer(UniformQuantizer):
-
     def name(self):
         return "uniform_mt" + str(self.num_bits) + "b"
 
     def quantize(self, X):
-        if(self.num_bits <= 1): #mid-tread requires at least 2 bits
+        if (self.num_bits <= 1):  #mid-tread requires at least 2 bits
             return np.zeros(X.shape), UniformQuantizer.get_total_bytes(self, X)
 
-        L = 2**self.num_bits-1
+        L = 2**self.num_bits - 1
         eps = 1e-7
-        a = max(np.max(X), -1*np.min(X))+eps
-        delta = 2*a/(L-1)
-        return np.round((X+a)/delta)*delta-a, UniformQuantizer.get_total_bytes(self, X)
-
-
+        a = max(np.max(X), -1 * np.min(X)) + eps
+        delta = 2 * a / (L - 1)
+        return np.round(
+            (X + a) / delta) * delta - a, UniformQuantizer.get_total_bytes(
+                self, X)

@@ -25,7 +25,6 @@ elif args.quantizer == "kmeans":
     quantizer = quantizers.KmeansQuantizer(args.num_centroids)
 elif args.quantizer == "uniform_mt":
     quantizer = quantizers.MidtreadQuantizer(args.num_bits)
-
 """
 Run the bucketing algorithms! The bucketing algorithms are always run by running
 the 'row_bucketer' first then by running the 'col_bucketer' second. If you must

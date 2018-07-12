@@ -83,7 +83,7 @@ def load_embeddings(filename):
     Loads a GloVe embedding at 'filename'. Returns a vector of strings that 
     represents the vocabulary and a 2-D numpy matrix that is the embeddings. 
     """
-    converter={0:np.str}
+    converter = {0: np.str}
     csv.field_size_limit(sys.maxsize)
     df = pd.read_csv(
         filename,
