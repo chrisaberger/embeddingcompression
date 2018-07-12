@@ -1,6 +1,3 @@
-import numpy as np
-from .quantizer import Quantizer
-from sklearn.cluster import KMeans
 
 
 class KmeansQuantizer(Quantizer):

@@ -1,7 +1,3 @@
-import utils
-import core
-import quantizers
-import bucketers
 
 args = utils.parse_arguments()
 vocab, embedding = utils.load_embeddings(args.filename)

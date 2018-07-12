@@ -86,3 +86,4 @@ class MidtreadQuantizer(UniformQuantizer):
         return np.round(
             (X + a) / delta) * delta - a, UniformQuantizer.get_total_bytes(
                 self, X)
+
