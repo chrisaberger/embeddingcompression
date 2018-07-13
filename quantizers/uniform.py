@@ -84,7 +84,7 @@ class MidtreadQuantizer(UniformQuantizer):
 
         L = 2**self.num_bits - 1
         eps = 1e-7
-        a = max(np.max(X), -1 * np.min(X)) + eps
+        a = max(np.abs(np.max(X)), np.abs(np.min(X))) + eps
         delta = 2 * a / (L - 1)
         return np.round(
             (X + a) / delta) * delta - a, UniformQuantizer.get_total_bytes(
