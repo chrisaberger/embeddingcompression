@@ -68,16 +68,60 @@ def gen_embedddings():
                                 processes.append(proc)
 
                             if len(processes) >= num_cores:
-                                for proc in processes:
-                                    proc.wait()
-                                processes = []
+                                found = False
+                                delete_indexes = []
+                                while not found:
+                                    for i in range(processes):
+                                        poll = processes[i].poll()
+                                        if poll != None:
+                                            found = True
+                                            delete_indexes.append(i)
+                            for inx in delete_indexes:
+                                del processes[inx]
 
     os.chdir(cwd)
     for proc in processes:
         proc.wait()
 
 def eval_embeddings(folder):
-    
+    # read all the files in the folder
+    states = {}
+    processes = []
+    for filename in os.listdir(folder):
+        filenames.append(filename)
+        cmd = f"python ws_eval.py GLOVE {os.path.join(folder, filename)} testsets/ws/ws353.txt"
+        proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, close_fds=True)
+        processes.append((proc, "ws353", filename))
+        if len(processes) >= num_cores:
+            found = False
+            while not found:
+                delete_indexes = []
+                for i in range(len(processes)):
+                    proc = processes[i][0]
+                    task = processes[i][1]
+                    filename = processes[i][2]
+                    poll = proc.poll()
+                    if poll != None:
+                        found = True
+                        print("HERE")
+                        exit()
+                        output = proc.stdout.read().strip().decode("utf-8").split(" ")
+                        states[filename] = {task : output}
+                        delete_indexes.append(i)
+            for indx in delete_indexes:
+                del processes[indx]
+
+    for i in range(len(processes)):
+        proc = processes[i][0]
+        task = processes[i][1]
+        filename = processes[i][2]
+        proc.wait()
+        output = proc.stdout.read().strip().decode("utf-8").split(" ")
+        states[filename] = {task : output}
+
+    print(states)
+    exit()
+    # parse the file names
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
