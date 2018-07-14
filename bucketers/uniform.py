@@ -7,6 +7,9 @@ from .bucketer import Bucketer
 
 class UniformRowBucketer(Bucketer):
 
+    def __init__(self, num_buckets, max_num_buckets):
+        Bucketer.__init__(self, num_buckets, max_num_buckets)
+
     def extra_bytes_needed(self):
         return 0
 
@@ -32,7 +35,10 @@ class UniformRowBucketer(Bucketer):
         return row_bucket, np.arange(X.shape[0])
 
 
-class UniformColBucketer:
+class UniformColBucketer(Bucketer):
+
+    def __init__(self, num_buckets, max_num_buckets):
+        Bucketer.__init__(self, num_buckets, max_num_buckets)
 
     def name(self):
         return "uniform" + str(self.num_buckets)

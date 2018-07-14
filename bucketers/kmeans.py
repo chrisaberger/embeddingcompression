@@ -10,6 +10,8 @@ from tqdm import tqdm
 
 
 class KmeansRowBucketer(Bucketer):
+    def __init__(self, num_buckets, max_num_buckets):
+        Bucketer.__init__(self, num_buckets, max_num_buckets)
 
     def name(self):
         return "kmeans" + str(self.num_buckets)
@@ -51,6 +53,9 @@ class KmeansRowBucketer(Bucketer):
 
 class KmeansColBucketer(Bucketer):
 
+    def __init__(self, num_buckets, max_num_buckets):
+        Bucketer.__init__(self, num_buckets, max_num_buckets)
+
     def name(self):
         return "kmean" + str(self.num_buckets)
 
@@ -64,7 +69,7 @@ class KmeansColBucketer(Bucketer):
         final_buckets = []
         for bucket in row_buckets:
             transposed_bucket = np.transpose(bucket)
-            rowBucketer = KmeansRowBucketer(self.num_buckets)
+            rowBucketer = KmeansRowBucketer(self.num_buckets, self.max_num_buckets)
             col_buckets, col_indexes = rowBucketer.bucket(transposed_bucket)
             for i in range(len(col_buckets)):
                 col_buckets[i] = np.transpose(col_buckets[i])

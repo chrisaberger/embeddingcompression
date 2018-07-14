@@ -6,6 +6,7 @@ class Bucketer:
         if num_buckets <= 0:
             num_buckets = max_num_buckets
         self.num_buckets = num_buckets
+        self.max_num_buckets = max_num_buckets
 
     def extra_bytes_needed(self):
         raise NotImplementedError
