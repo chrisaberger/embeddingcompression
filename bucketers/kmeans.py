@@ -11,9 +11,6 @@ from tqdm import tqdm
 
 class KmeansRowBucketer(Bucketer):
 
-    def __init__(self, num_buckets):
-        self.num_buckets = num_buckets
-
     def name(self):
         return "kmeans" + str(self.num_buckets)
 
@@ -53,9 +50,6 @@ class KmeansRowBucketer(Bucketer):
 
 
 class KmeansColBucketer(Bucketer):
-
-    def __init__(self, num_buckets):
-        self.num_buckets = num_buckets
 
     def name(self):
         return "kmean" + str(self.num_buckets)
