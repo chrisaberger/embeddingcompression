@@ -57,7 +57,7 @@ class KmeansColBucketer(Bucketer):
         Bucketer.__init__(self, num_buckets, max_num_buckets)
 
     def name(self):
-        return "kmean" + str(self.num_buckets)
+        return "kmeans" + str(self.num_buckets)
 
     def extra_bytes_needed(self):
         # In each bucket you need a mapping back to the original column order.

@@ -5,24 +5,24 @@ import datetime
 import re
 
 ################################################################################
-num_cores = 64
+num_cores = 40
 filenames = [
-    "/dfs/scratch0/caberger/systems/GloVe-1.2/vectors.txt"
+    "/lfs/local/0/caberger/embeddings/wiki-news-300d-1M.vec"
 ]
 
-quantizers = ["kmeans", "uniform_fp"]
-bucketers = ["kmeans", "uniform"]
+quantizers = ["uniform_fp", "kmeans"]
+bucketers = ["uniform", "kmeans"]
 
 kmeans_params = {
-    "num_row_buckets": [1, -1],
-    "num_col_buckets": [1, -1],
-    "sweep": ("num_centroids", [2, 8, 16, 128])
+    "num_row_buckets": [1, 100, 200, 400, 800],
+    "num_col_buckets": [1, 150, -1],
+    "sweep": ("num_centroids", [2, 3, 4, 5])
 }
 
 uniform_params = {
     "num_row_buckets": [1, -1],
     "num_col_buckets": [1, -1],
-    "sweep": ("num_bits", [1, 8])
+    "sweep": ("num_bits", [2, 3, 4, 5, 6, 7, 8])
 }
 ################################################################################
 
@@ -49,8 +49,9 @@ tasks = {
 
 def gen_embedddings():
     cwd = os.getcwd()
+    outdir = "/lfs/local/0/caberger/generated_embs"
     now = datetime.datetime.now()
-    output_folder = os.path.join(cwd, "outputs") + "m" + str(now.month) + "-d" \
+    output_folder = os.path.join(outdir, "outputs") + "m" + str(now.month) + "-d" \
                     + str(now.day) + "-t" + str(now.hour) + "-m" + str(now.minute)
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
@@ -64,7 +65,7 @@ def gen_embedddings():
         for q in quantizers:
             for cb in bucketers:
                 for rb in bucketers:
-                    params = uniform_params if q == "uniform" else kmeans_params
+                    params = kmeans_params if q == "kmeans" else uniform_params
 
                     num_row_buckets = params["num_row_buckets"]
                     num_col_buckets = params["num_col_buckets"]
@@ -87,18 +88,18 @@ def gen_embedddings():
                                 command = command + f" 2>&1 | tee {log_file}"
                                 proc = subprocess.Popen(command, shell=True)
                                 processes.append(proc)
-
-                            if len(processes) >= num_cores:
-                                found = False
-                                delete_indexes = []
-                                while not found:
-                                    for i in range(len(processes)):
-                                        poll = processes[i].poll()
-                                        if poll != None:
-                                            found = True
-                                            delete_indexes.append(i)
-                                for i in range(len(delete_indexes)):
-                                    del processes[delete_indexes[i]-i]
+                                print(command)
+                                if len(processes) >= num_cores:
+                                    found = False
+                                    while not found:
+                                        delete_indexes = []
+                                        for i in range(len(processes)):
+                                            poll = processes[i].poll()
+                                            if poll != None:
+                                                found = True
+                                                delete_indexes.append(i)
+                                        for i in range(len(delete_indexes)):
+                                            del processes[delete_indexes[i]-i]
 
     os.chdir(cwd)
     for proc in processes:
@@ -112,6 +113,7 @@ def eval_embeddings(folder):
     # Add a for loop for each task. 
     # 
     for filename in os.listdir(folder):
+        states[filename] = {}
         for task_class in tasks:
             for task in tasks[task_class]:
                 if task_class == "ws":
@@ -123,7 +125,6 @@ def eval_embeddings(folder):
                 proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, close_fds=True)
                 processes.append((proc, task_class, task, filename, cmd))
 
-                states[filename] = {}
 
                 if len(processes) >= num_cores:
                     found = False
@@ -140,15 +141,28 @@ def eval_embeddings(folder):
                                 found = True
                                 output = iproc.stdout.read().strip().decode("utf-8").split(" ")
                                 if itask_class == "ws":
-                                    states[ifilename][itask] = float(output[2])
+                                    print(icmd)
+                                    print(output)
+                                    if len(output) != 3:
+                                        states[ifilename][itask] = float(0.0)
+                                    else: 
+                                        states[ifilename][itask] = float(output[2])
                                 elif itask_class == "analogy":
-                                    states[ifilename][itask + "_add"] = float(output[2])
-                                    states[ifilename][itask + "_mul"] = float(output[3])
+                                    print(icmd)
+                                    print(output)
+                                    if len(output) != 4:
+                                        states[ifilename][itask + "_add"] = float(0.0)
+                                        states[ifilename][itask + "_mul"] = float(0.0)
+                                    else:
+                                        states[ifilename][itask + "_add"] = float(output[2])
+                                        states[ifilename][itask + "_mul"] = float(output[3])
+
 
                                 delete_indexes.append(i)
-                    for i in range(len(delete_indexes)):
-                        del processes[delete_indexes[i]-i]
+                        for i in range(len(delete_indexes)):
+                            del processes[delete_indexes[i]-i]
 
+    print(states)
     for i in range(len(processes)):
         proc = processes[i][0]
         task_class = processes[i][1]
@@ -159,10 +173,20 @@ def eval_embeddings(folder):
         proc.wait()
         output = proc.stdout.read().strip().decode("utf-8").split(" ")
         if task_class == "ws":
-            states[filename][task] = float(output[2])
+            print(cmd)
+            print(output)
+            if len(output) != 3:
+                states[filename][task] = float(0.0)
+            else: 
+                states[filename][task] = float(output[2])
         elif task_class == "analogy":
-            states[filename][task + "_add"] = float(output[2])
-            states[filename][task + "_mul"] = float(output[3])
+            if len(output) != 4:
+                states[filename][task + "_add"] = float(0.0)
+                states[filename][task + "_mul"] = float(0.0)
+            else:
+                states[filename][task + "_add"] = float(output[2])
+                states[filename][task + "_mul"] = float(output[3])
+
 
 
     head, tail = os.path.split(folder)
@@ -183,6 +207,124 @@ def eval_embeddings(folder):
     f.write("num_bytes")
     f.write(",")
 
+    flat_tasks = []
+    for task in tasks["ws"]:
+        flat_tasks.append(task)
+    for task in tasks["analogy"]:
+        flat_tasks.append(task + "_add")
+        flat_tasks.append(task + "_mul")
+
+    f.write(",".join(flat_tasks) + "," + "\n")
+
+    print()
+    print(states)
+    for filename in states:
+        matchObj = re.match( r'q([^0-9]+)(\d+)b_r([^0-9]+)(\d+)_c([^0-9]+)(\d+)_bytes(.*).txt', filename, re.M|re.I)
+        quantizer = matchObj.group(1)
+        quantizer_config = matchObj.group(2)
+        row_bucketer = matchObj.group(3)
+        num_row_buckets = matchObj.group(4)
+        col_bucketer = matchObj.group(5)
+        num_col_buckets = matchObj.group(6)
+        num_bytes = matchObj.group(7)
+
+        f.write(",".join([quantizer,  quantizer_config, row_bucketer, \
+                num_row_buckets, col_bucketer, num_col_buckets, num_bytes]))
+        f.write(",")
+        print(filename)
+        print(states[filename])
+        for task in flat_tasks:
+            f.write(str(states[filename][task]) + ",")
+        f.write("\n")
+
+    f.close()
+    # parse the file names
+
+def eval_baseline():
+    filename = filenames[0]
+    processes = []
+    states = {}
+    states[filename] = {}
+    for task_class in tasks:
+        for task in tasks[task_class]:
+            if task_class == "ws":
+                cmd = f"python3 ws_eval.py GLOVE {filename} testsets/{task_class}/{task}.txt"
+                print(cmd)
+            elif task_class == "analogy":
+                cmd = f"python3 analogy_eval.py GLOVE {filename} testsets/{task_class}/{task}.txt"
+                print(cmd)
+            proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, close_fds=True)
+            processes.append((proc, task_class, task, filename, cmd))
+
+            if len(processes) >= num_cores:
+                found = False
+                while not found:
+                    delete_indexes = []
+                    for i in range(len(processes)):
+                        iproc = processes[i][0]
+                        itask_class = processes[i][1]
+                        itask = processes[i][2]
+                        ifilename = processes[i][3]
+                        icmd = processes[i][4]
+                        poll = iproc.poll()
+                        if poll != None:
+                            found = True
+                            output = iproc.stdout.read().strip().decode("utf-8").split(" ")
+                            if itask_class == "ws":
+                                print(icmd)
+                                print(output)
+                                if len(output) != 3:
+                                    states[ifilename][itask] = float(0.0)
+                                else: 
+                                    states[ifilename][itask] = float(output[2])
+                            elif itask_class == "analogy":
+                                print(icmd)
+                                print(output)
+                                if len(output) != 4:
+                                    states[ifilename][itask + "_add"] = float(0.0)
+                                    states[ifilename][itask + "_mul"] = float(0.0)
+                                else:
+                                    states[ifilename][itask + "_add"] = float(output[2])
+                                    states[ifilename][itask + "_mul"] = float(output[3])
+
+                            delete_indexes.append(i)
+                    for i in range(len(delete_indexes)):
+                        del processes[delete_indexes[i]-i]
+
+
+    print(len(processes))
+    for i in range(len(processes)):
+        proc = processes[i][0]
+        task_class = processes[i][1]
+        task = processes[i][2]
+        filename = processes[i][3]
+        cmd = processes[i][4]
+
+        print(filename)
+        print(task)
+        proc.wait()
+        output = proc.stdout.read().strip().decode("utf-8").split(" ")
+        if task_class == "ws":
+            print(cmd)
+            print(output)
+
+            if len(output) != 3:
+                states[filename][task] = float(0.0)
+            else: 
+                states[filename][task] = float(output[2])
+
+
+        elif task_class == "analogy":
+
+            if len(output) != 4:
+                states[filename][task + "_add"] = float(0.0)
+                states[filename][task + "_mul"] = float(0.0)
+            else:
+                states[filename][task + "_add"] = float(output[2])
+                states[filename][task + "_mul"] = float(output[3])
+
+    f = open("baseline.csv", 'w')
+
     flat_tasks = [ 
         "bruni_men",
         "luong_rare",
@@ -198,25 +340,11 @@ def eval_embeddings(folder):
     ]
     f.write(",".join(flat_tasks) + "," + "\n")
 
+    print(states)
     for filename in states:
-        matchObj = re.match( r'q([^0-9]+)(\d+)b_r([^0-9]+)(\d+)_c([^0-9]+)(\d+)_bytes(.*).txt', filename, re.M|re.I)
-        quantizer = matchObj.group(1)
-        quantizer_config = matchObj.group(2)
-        row_bucketer = matchObj.group(3)
-        num_row_buckets = matchObj.group(4)
-        col_bucketer = matchObj.group(5)
-        num_col_buckets = matchObj.group(6)
-        num_bytes = matchObj.group(7)
-
-        f.write(",".join([quantizer,  quantizer_config, row_bucketer, \
-                num_row_buckets, col_bucketer, num_col_buckets, num_bytes]))
-        f.write(",")
         for task in flat_tasks:
             f.write(str(states[filename][task]) + ",")
         f.write("\n")
-
-    f.close()
-    # parse the file names
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -224,10 +352,14 @@ parser.add_argument(
 parser.add_argument(
     "-e", "--eval", action="store_true", help="Flag to evaluate embeddings.")
 parser.add_argument(
+    "-b", "--baseline", action="store_true", help="Flag to evaluate baseline embeddings.")
+parser.add_argument(
     "-f", "--folder", action="store", help="Folder holding the emebeddings to be evaluated.")
 args = parser.parse_args()
 
 if args.gen:
     gen_embedddings()
+if args.baseline:
+    eval_baseline()
 elif args.eval:
     eval_embeddings(args.folder)
