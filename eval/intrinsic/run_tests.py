@@ -5,25 +5,23 @@ import datetime
 import re
 
 ################################################################################
-num_cores = 40
+num_cores = 56
 filenames = [
-    "/lfs/local/0/caberger/embeddings/wiki-news-300d-1M.vec"
+    #"/lfs/local/0/caberger/embeddings/wiki-news-300d-1M.vec"
+    "/dfs/scratch0/caberger/systems/GloVe-1.2/vectors.txt"
 ]
 
-quantizers = ["uniform_fp", "kmeans"]
+quantizers = ["uniform_fp"] #, "kmeans"]
 bucketers = ["uniform", "kmeans"]
 
-kmeans_params = {
-    "num_row_buckets": [1, 100, 200, 400, 800],
-    "num_col_buckets": [1, 150, -1],
-    "sweep": ("num_centroids", [2, 3, 4, 5])
+params = {
+    "num_row_buckets" : [1, 100, 200, 400, 800, -1],
+    "num_col_buckets" : [1, -1],
+    "num_centroids" : [2, 3, 4, 5],
+    "num_bits" : [1]
+    #"num_bits" : [2, 3, 4, 5, 6, 7, 8]
 }
 
-uniform_params = {
-    "num_row_buckets": [1, -1],
-    "num_col_buckets": [1, -1],
-    "sweep": ("num_bits", [2, 3, 4, 5, 6, 7, 8])
-}
 ################################################################################
 
 ################################################################################
@@ -65,15 +63,18 @@ def gen_embedddings():
         for q in quantizers:
             for cb in bucketers:
                 for rb in bucketers:
-                    params = kmeans_params if q == "kmeans" else uniform_params
+                    sweep = "num_centroids" if q == "kmeans" else "num_bits"
 
                     num_row_buckets = params["num_row_buckets"]
                     num_col_buckets = params["num_col_buckets"]
 
                     for r in num_row_buckets:
                         for c in num_col_buckets:
-                            sweep = params["sweep"][0]
-                            for s in params["sweep"][1]:
+                            if (rb == "kmeans" and (r == -1 or r == 1)) or \
+                               (cb == "kmeans" and (c == -1 or c == 1)) or \
+                               (c == -1 and r == -1):
+                                break
+                            for s in params[sweep]:
                                 command = "python main.py" + \
                                       f" -f {filename}" + \
                                       f" --num_row_buckets {r}" + \
@@ -84,7 +85,7 @@ def gen_embedddings():
                                       f" --output_folder {output_folder}" + \
                                       f" --col_bucketer {cb}"
                                 log_file = os.path.join(logdir, 
-                                    f"q{q}rb{rb}cb{cb}{sweep}{s}nr{r}nc{c}.log")
+                                    f"q{q}_r{rb}{r}_c{cb}{c}_{sweep}{s}.log")
                                 command = command + f" 2>&1 | tee {log_file}"
                                 proc = subprocess.Popen(command, shell=True)
                                 processes.append(proc)
@@ -325,19 +326,12 @@ def eval_baseline():
 
     f = open("baseline.csv", 'w')
 
-    flat_tasks = [ 
-        "bruni_men",
-        "luong_rare",
-        "radinsky_mturk",
-        "simlex999",
-        "ws353_relatedness",
-        "ws353_similarity",
-        "ws353",
-        "google_mul",
-        "google_add",
-        "msr_mul",
-        "msr_add"
-    ]
+    flat_tasks = []
+    for task in tasks["ws"]:
+        flat_tasks.append(task)
+    for task in tasks["analogy"]:
+        flat_tasks.append(task + "_add")
+        flat_tasks.append(task + "_mul")
     f.write(",".join(flat_tasks) + "," + "\n")
 
     print(states)
