@@ -10,9 +10,8 @@ from tqdm import tqdm
 
 
 class KmeansRowBucketer(Bucketer):
-
-    def __init__(self, num_buckets):
-        self.num_buckets = num_buckets
+    def __init__(self, num_buckets, max_num_buckets):
+        Bucketer.__init__(self, num_buckets, max_num_buckets)
 
     def name(self):
         return "kmeans" + str(self.num_buckets)
@@ -54,11 +53,11 @@ class KmeansRowBucketer(Bucketer):
 
 class KmeansColBucketer(Bucketer):
 
-    def __init__(self, num_buckets):
-        self.num_buckets = num_buckets
+    def __init__(self, num_buckets, max_num_buckets):
+        Bucketer.__init__(self, num_buckets, max_num_buckets)
 
     def name(self):
-        return "kmean" + str(self.num_buckets)
+        return "kmeans" + str(self.num_buckets)
 
     def extra_bytes_needed(self):
         # In each bucket you need a mapping back to the original column order.
@@ -70,7 +69,7 @@ class KmeansColBucketer(Bucketer):
         final_buckets = []
         for bucket in row_buckets:
             transposed_bucket = np.transpose(bucket)
-            rowBucketer = KmeansRowBucketer(self.num_buckets)
+            rowBucketer = KmeansRowBucketer(self.num_buckets, self.max_num_buckets)
             col_buckets, col_indexes = rowBucketer.bucket(transposed_bucket)
             for i in range(len(col_buckets)):
                 col_buckets[i] = np.transpose(col_buckets[i])

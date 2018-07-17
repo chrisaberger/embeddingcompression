@@ -83,19 +83,18 @@ def load_embeddings(filename):
     Loads a GloVe embedding at 'filename'. Returns a vector of strings that 
     represents the vocabulary and a 2-D numpy matrix that is the embeddings. 
     """
-    converter = {0: np.str}
-    csv.field_size_limit(sys.maxsize)
-    df = pd.read_csv(
-        filename,
-        sep=' ',
-        header=None,
-        converters=converter,
-        keep_default_na=False,
-        engine='python',
-        quoting=csv.QUOTE_NONE,
-        na_values=[''])
-    vocab = df[df.columns[0]]
-    embedding = df.drop(df.columns[0], axis=1).as_matrix()
+
+    file = open(filename, "r") 
+    lines = file.readlines()
+    vocab = []
+    embedding = []
+    for line in lines:
+        values = line.strip("\n").split(" ")
+        vocab.append(values.pop(0))
+        embedding.append([float(v) for v in values])
+    embedding = np.array(embedding)
+    vocab = np.array(vocab)
+    file.close()
 
     print("Embedding shape: " + str(embedding.shape))
     return vocab, embedding
@@ -128,11 +127,14 @@ def create_filename(output_folder, input_filename, row_bucketer, col_bucketer,
 
 def to_file(filename, V, X):
 
-    pdv = pd.DataFrame(V)
-    pdv.rename(columns={0: 'v'}, inplace=True)
-    result = pdv.join(pd.DataFrame(X))
-    result.to_csv(filename, sep=' ', index=False, header=False)
-
+    file = open(filename, "w") 
+    for i in range(V.size):
+        file.write(V[i] + " ")
+        row = X[i, :]
+        strrow = [str(r) for r in row]
+        file.write(" ".join(strrow))
+        file.write("\n")
+    file.close()
 
 def num_bits_needed(number):
     return np.ceil(np.log2(number))
