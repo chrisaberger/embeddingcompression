@@ -73,6 +73,12 @@ def read_config(filename):
 
 
 def poll_processes(processes, num_cores, state=None):
+    """
+    Manages our processes. If we have less processes then more continue on and
+    kick off more. If we have more processes than cores (or equal), loop over 
+    all processes polling until one finishes. When one (or more) finishes (at 
+    the same time) delete it from the processes list and move on.
+    """
     if len(processes) < num_cores:
         return
 
@@ -85,12 +91,14 @@ def poll_processes(processes, num_cores, state=None):
                 processes[i].update_state(state)
                 found = True
                 delete_indexes.append(i)
-
     for i in range(len(delete_indexes)):
         del processes[delete_indexes[i] - i]
 
 
 def wait_processes(processes, state=None):
+    """
+    Wait until all processes are finished. Usually called at the very end.
+    """
     for proc in processes:
         proc.wait()
         proc.update_state(state)
@@ -197,7 +205,7 @@ def eval_embeddings(config, args):
 
     class EvalProcess:
 
-        def __init__(self, p, task, task_class, filename, cmd):
+        def __init__(self, p, task_class, task, filename, cmd):
             self.p = p
             self.task = task
             self.task_class = task_class
@@ -271,9 +279,8 @@ def eval_embeddings(config, args):
                 poll_processes(processes, config["num_cores"], states)
 
     wait_processes(processes, states)
-    """
-    Write the output to a CSV.
-    """
+    
+    """-------------------Write the output to a CSV.-------------------------"""
     head, tail = os.path.split(args.folder)
     csv_out_file = os.path.join(head, "out.csv")
     f = open(csv_out_file, 'w')
@@ -282,19 +289,22 @@ def eval_embeddings(config, args):
     )
 
     flat_tasks = []
-    for task in tasks["ws"]:
+    for task in config["tasks"]["ws"]:
         flat_tasks.append(task)
-    for task in tasks["analogy"]:
+    for task in config["tasks"]["analogy"]:
         flat_tasks.append(task + "_add")
         flat_tasks.append(task + "_mul")
 
     f.write(",".join(flat_tasks) + "," + "\n")
+
+    print(states)
 
     f.write("baseline,baseline,baseline,baseline,baseline,baseline,baseline,")
     for task in flat_tasks:
         f.write(str(states["baseline"][task]) + ",")
     f.write("\n")
 
+    # Use a regex to extract information from the embedding filename.
     for filename in states:
         matchObj = re.match(
             r'q([^0-9]+)(\d+)b_r([^0-9]+)(\d+)_c([^0-9]+)(\d+)_bytes(.*).txt',
@@ -315,6 +325,8 @@ def eval_embeddings(config, args):
         f.write("\n")
 
     f.close()
+    """----------------End write the output to a CSV.------------------------"""
+
     os.chdir(cwd)
 
 def main():
