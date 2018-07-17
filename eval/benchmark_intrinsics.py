@@ -306,6 +306,8 @@ def eval_embeddings(config, args):
 
     # Use a regex to extract information from the embedding filename.
     for filename in states:
+        if filename == "baseline":
+            break
         matchObj = re.match(
             r'q([^0-9]+)(\d+)b_r([^0-9]+)(\d+)_c([^0-9]+)(\d+)_bytes(.*).txt',
             filename, re.M | re.I)
