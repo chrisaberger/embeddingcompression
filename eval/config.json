@@ -10,10 +10,10 @@
         "uniform",
         "kmeans"
     ],
-    "num_row_buckets" : [1, 100, 200, 400, 800, -1],
+    "num_row_buckets" : [1, 100, 200, 400, -1],
     "num_col_buckets" : [1, -1],
-    "num_centroids" : [2, 3, 4, 5],
-    "num_bits" : [2, 3, 4, 5, 6, 7, 8],
+    "num_centroids" : [2, 3, 4],
+    "num_bits" : [4, 5, 6],
     "tasks" : {
         "ws": [
             "bruni_men",

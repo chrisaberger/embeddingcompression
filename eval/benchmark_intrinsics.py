@@ -68,17 +68,19 @@ def read_config(filename):
 def poll_processes(processes, num_cores, state = None):
     if len(processes) < num_cores:
         return
+
     found = False
+    delete_indexes = []
     while not found:
-        delete_indexes = []
         for i in range(len(processes)):
             poll = processes[i].poll()
             if poll != None:
-                proc.update_state(state)
+                processes[i].update_state(state)
                 found = True
                 delete_indexes.append(i)
-        for i in range(len(delete_indexes)):
-            del processes[delete_indexes[i]-i]
+
+    for i in range(len(delete_indexes)):
+        del processes[delete_indexes[i]-i]
 
 def wait_processes(processes, state = None):
     for proc in processes:
@@ -136,7 +138,7 @@ def gen_embedddings(config, args):
             self.p = p
 
         def poll(self):
-            self.p.poll()
+            return self.p.poll()
 
         def wait(self):
             self.p.wait()
@@ -159,10 +161,9 @@ def gen_embedddings(config, args):
                         for s in config[sweep]:
                             cmd = get_gen_cmd(filename, r, c, sweep, s, q, 
                                               rb, outdir, cb)
-      
-                            proc = subprocess.Popen(cmd, shell=True)
-                            processes.append(GenProcess(proc))
                             print(cmd)
+                            proc = subprocess.Popen(cmd, shell=True) #, stdout=subprocess.DEVNULL)
+                            processes.append(GenProcess(proc))
                             poll_processes(processes, config["num_cores"])
 
     wait_processes()
@@ -190,13 +191,14 @@ def eval_embeddings(config, args):
             self.cmd = cmd
 
         def poll(self):
-            self.p.poll()
+            return self.p.poll()
 
         def wait(self):
             self.p.wait()
 
         def update_state(self, states):
             output = self.p.stdout.read().strip().decode("utf-8").split(" ")
+            print(output)
             if self.task_class == "ws":
                 if len(output) != 3:
                     states[self.filename][self.task] = float(0.0)
@@ -219,7 +221,7 @@ def eval_embeddings(config, args):
     states["baseline"] = {}
     for task_class in tasks:
         for task in tasks[task_class]:
-            get_eval_cmd(task, task_class, config["filename"])
+            cmd = get_eval_cmd(task, task_class, config["filename"])
             proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, 
                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
                         close_fds=True)
@@ -232,8 +234,9 @@ def eval_embeddings(config, args):
         states[filename] = {}
         for task_class in tasks:
             for task in tasks[task_class]:
-                get_eval_cmd(task, task_class, os.path.join(args.folder, filename))
-
+                cmd = get_eval_cmd(task, task_class, os.path.join(args.folder, 
+                                                                  filename))
+                print(cmd)
                 proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, 
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
                             close_fds=True)
