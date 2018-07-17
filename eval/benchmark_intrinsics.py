@@ -226,14 +226,17 @@ def eval_embeddings(config, args):
                     states[self.filename][self.task + "_add"] = float(output[2])
                     states[self.filename][self.task + "_mul"] = float(output[3])
 
+    cwd = os.getcwd()
+    os.chdir("eval/intrinsic/")
+
     # Holds the state.
     states = {}
     processes = []
 
     # Run the baselines first.
     states["baseline"] = {}
-    for task_class in tasks:
-        for task in tasks[task_class]:
+    for task_class in config["tasks"]:
+        for task in config["tasks"][task_class]:
             cmd = get_eval_cmd(task, task_class, config["filename"])
             print(cmd)
             proc = subprocess.Popen(
@@ -250,8 +253,8 @@ def eval_embeddings(config, args):
     # Now run all the other generated embeddings.
     for filename in os.listdir(args.folder):
         states[filename] = {}
-        for task_class in tasks:
-            for task in tasks[task_class]:
+        for task_class in config["tasks"]:
+            for task in config["tasks"][task_class]:
                 cmd = get_eval_cmd(task, task_class,
                                    os.path.join(args.folder, filename))
                 print(cmd)
@@ -312,10 +315,9 @@ def eval_embeddings(config, args):
         f.write("\n")
 
     f.close()
-
+    os.chdir(cwd)
 
 def main():
-    download_intrinsics()
     args = parse_user_args()
     if args.gen:
         if args.config is None:
@@ -324,11 +326,13 @@ def main():
         config = read_config(args.config)
         gen_embedddings(config, args)
     if args.eval:
+        download_intrinsics()
         if args.folder is None:
             raise ValueError(
                 "Folder holding (only) the embeddings to be evaluated"
                 "must be specified by user for embedding generation.")
-        config = read_config(os.path.join(folder, "config.json"))
+        head, tail = os.path.split(args.folder)
+        config = read_config(os.path.join(head, "config.json"))
         eval_embeddings(config, args)
 
 
