@@ -6,11 +6,11 @@ import re
 import json
 from pprint import pprint
 import shutil
-
 """
 This script is intended to be run from the root level of this repostitory. 
 Please see the comments in the 'parse_user_args' for instructions on how to run.
 """
+
 
 def parse_user_args():
     """
@@ -31,16 +31,21 @@ def parse_user_args():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-g", "--gen", action="store_true", 
-        help="Flag to generate embeddings.")
+        "-g", "--gen", action="store_true", help="Flag to generate embeddings.")
     parser.add_argument(
-        "-c", "--config", action="store", 
+        "-c",
+        "--config",
+        action="store",
         help="Configuration file for generating embeddings.")
     parser.add_argument(
-        "-e", "--eval", action="store_true", 
+        "-e",
+        "--eval",
+        action="store_true",
         help="Flag to evaluate embeddings.")
     parser.add_argument(
-        "-f", "--folder", action="store", 
+        "-f",
+        "--folder",
+        action="store",
         help="Folder holding the emebeddings to be evaluated.")
     args = parser.parse_args()
     return args
@@ -55,6 +60,7 @@ def download_intrinsics():
         os.system("bash download_data.sh")
         os.chdir("../..")
 
+
 def read_config(filename):
     """
     Parses 'filename' which should be a json config containing the parameters
@@ -65,7 +71,8 @@ def read_config(filename):
     pprint(data)
     return data
 
-def poll_processes(processes, num_cores, state = None):
+
+def poll_processes(processes, num_cores, state=None):
     if len(processes) < num_cores:
         return
 
@@ -80,18 +87,21 @@ def poll_processes(processes, num_cores, state = None):
                 delete_indexes.append(i)
 
     for i in range(len(delete_indexes)):
-        del processes[delete_indexes[i]-i]
+        del processes[delete_indexes[i] - i]
 
-def wait_processes(processes, state = None):
+
+def wait_processes(processes, state=None):
     for proc in processes:
         proc.wait()
         proc.update_state(state)
+
 
 def gen_embedddings(config, args):
     """
     Main method for generating embeddings via parameter sweep specified in 
     'config'.
     """
+
     def get_outdir_and_logdir(config, args):
         """
         Creates the output folder and log folder. Returns the corresponding paths
@@ -130,10 +140,12 @@ def gen_embedddings(config, args):
                     f" --row_bucketer {rb}" + \
                     f" --output_folder {outdir}" + \
                     f" --col_bucketer {cb}"
-        log_file = os.path.join(logdir, f"q{q}_r{rb}{r}_c{cb}{c}_{sweep}{s}.log")
+        log_file = os.path.join(logdir,
+                                f"q{q}_r{rb}{r}_c{cb}{c}_{sweep}{s}.log")
         return cmd + f" 2>&1 | tee {log_file}"
 
     class GenProcess:
+
         def __init__(self, p):
             self.p = p
 
@@ -143,7 +155,7 @@ def gen_embedddings(config, args):
         def wait(self):
             self.p.wait()
 
-        def update_state(self, state = None):
+        def update_state(self, state=None):
             return
 
     outdir, logdir = get_outdir_and_logdir(config, args)
@@ -159,10 +171,12 @@ def gen_embedddings(config, args):
                         if is_invalid_config(rb, r, cb, c):
                             break
                         for s in config[sweep]:
-                            cmd = get_gen_cmd(filename, r, c, sweep, s, q, 
-                                              rb, outdir, cb)
+                            cmd = get_gen_cmd(filename, r, c, sweep, s, q, rb,
+                                              outdir, cb)
                             print(cmd)
-                            proc = subprocess.Popen(cmd, shell=True) #, stdout=subprocess.DEVNULL)
+                            proc = subprocess.Popen(
+                                cmd,
+                                shell=True)    #, stdout=subprocess.DEVNULL)
                             processes.append(GenProcess(proc))
                             poll_processes(processes, config["num_cores"])
 
@@ -181,8 +195,8 @@ def eval_embeddings(config, args):
             return f"python analogy_eval.py GLOVE {filename} testsets/{task_class}/{task}.txt"
         raise ValueError("Task class not recognized.")
 
-
     class EvalProcess:
+
         def __init__(self, p, task, task_class, filename, cmd):
             self.p = p
             self.task = task
@@ -202,7 +216,7 @@ def eval_embeddings(config, args):
             if self.task_class == "ws":
                 if len(output) != 3:
                     states[self.filename][self.task] = float(0.0)
-                else: 
+                else:
                     states[self.filename][self.task] = float(output[2])
             elif self.task_class == "analogy":
                 if len(output) != 4:
@@ -212,21 +226,24 @@ def eval_embeddings(config, args):
                     states[self.filename][self.task + "_add"] = float(output[2])
                     states[self.filename][self.task + "_mul"] = float(output[3])
 
-
     # Holds the state.
     states = {}
     processes = []
-    
+
     # Run the baselines first.
     states["baseline"] = {}
     for task_class in tasks:
         for task in tasks[task_class]:
             cmd = get_eval_cmd(task, task_class, config["filename"])
-            proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, 
-                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
-                        close_fds=True)
-            processes.append(EvalProcess(proc, task_class, task, 
-                                         "baseline", cmd))
+            proc = subprocess.Popen(
+                cmd,
+                shell=True,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                close_fds=True)
+            processes.append(
+                EvalProcess(proc, task_class, task, "baseline", cmd))
             poll_processes(processes, config["num_cores"], states)
 
     # Now run all the other generated embeddings.
@@ -234,26 +251,31 @@ def eval_embeddings(config, args):
         states[filename] = {}
         for task_class in tasks:
             for task in tasks[task_class]:
-                cmd = get_eval_cmd(task, task_class, os.path.join(args.folder, 
-                                                                  filename))
+                cmd = get_eval_cmd(task, task_class,
+                                   os.path.join(args.folder, filename))
                 print(cmd)
-                proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, 
-                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
-                            close_fds=True)
-                processes.append(EvalProcess(proc, task_class, task, 
-                                             filename, cmd))
+                proc = subprocess.Popen(
+                    cmd,
+                    shell=True,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    close_fds=True)
+                processes.append(
+                    EvalProcess(proc, task_class, task, filename, cmd))
 
                 poll_processes(processes, config["num_cores"], states)
 
     wait_processes(states)
-
     """
     Write the output to a CSV.
     """
     head, tail = os.path.split(args.folder)
     csv_out_file = os.path.join(head, "out.csv")
     f = open(csv_out_file, 'w')
-    f.write("quantizer,# centroids or bits,row_bucketer,num_row_buckets,col_bucketer,num_col_buckets,num_bytes")
+    f.write(
+        "quantizer,# centroids or bits,row_bucketer,num_row_buckets,col_bucketer,num_col_buckets,num_bytes"
+    )
 
     flat_tasks = []
     for task in tasks["ws"]:
@@ -270,7 +292,9 @@ def eval_embeddings(config, args):
     f.write("\n")
 
     for filename in states:
-        matchObj = re.match( r'q([^0-9]+)(\d+)b_r([^0-9]+)(\d+)_c([^0-9]+)(\d+)_bytes(.*).txt', filename, re.M|re.I)
+        matchObj = re.match(
+            r'q([^0-9]+)(\d+)b_r([^0-9]+)(\d+)_c([^0-9]+)(\d+)_bytes(.*).txt',
+            filename, re.M | re.I)
         quantizer = matchObj.group(1)
         quantizer_config = matchObj.group(2)
         row_bucketer = matchObj.group(3)
@@ -288,6 +312,7 @@ def eval_embeddings(config, args):
 
     f.close()
 
+
 def main():
     download_intrinsics()
     args = parse_user_args()
@@ -299,9 +324,11 @@ def main():
         gen_embedddings(config, args)
     if args.eval:
         if args.folder is None:
-            raise ValueError("Folder holding (only) the embeddings to be evaluated"
-                             "must be specified by user for embedding generation.")
+            raise ValueError(
+                "Folder holding (only) the embeddings to be evaluated"
+                "must be specified by user for embedding generation.")
         config = read_config(os.path.join(folder, "config.json"))
         eval_embeddings(config, args)
+
 
 if __name__ == "__main__": main()
