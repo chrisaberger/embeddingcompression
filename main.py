@@ -25,6 +25,8 @@ elif args.quantizer == "kmeans":
     quantizer = quantizers.KmeansQuantizer(args.num_centroids)
 elif args.quantizer == "uniform_mt":
     quantizer = quantizers.MidtreadQuantizer(args.num_bits)
+elif args.quantizer == "lloydmax":
+    quantizer = quantizers.LloydMaxQuantizer(args.num_centroids, args.quant_num_rows, args.quant_num_cols)
 """
 Run the bucketing algorithms! The bucketing algorithms are always run by running
 the 'row_bucketer' first then by running the 'col_bucketer' second. If you must
