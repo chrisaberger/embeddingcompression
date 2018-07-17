@@ -297,8 +297,6 @@ def eval_embeddings(config, args):
 
     f.write(",".join(flat_tasks) + "," + "\n")
 
-    print(states)
-
     f.write("baseline,baseline,baseline,baseline,baseline,baseline,baseline,")
     for task in flat_tasks:
         f.write(str(states["baseline"][task]) + ",")
@@ -307,7 +305,7 @@ def eval_embeddings(config, args):
     # Use a regex to extract information from the embedding filename.
     for filename in states:
         if filename == "baseline":
-            break
+            continue
         matchObj = re.match(
             r'q([^0-9]+)(\d+)b_r([^0-9]+)(\d+)_c([^0-9]+)(\d+)_bytes(.*).txt',
             filename, re.M | re.I)
@@ -345,8 +343,13 @@ def main():
             raise ValueError(
                 "Folder holding (only) the embeddings to be evaluated"
                 "must be specified by user for embedding generation.")
-        head, tail = os.path.split(args.folder)
-        config = read_config(os.path.join(head, "config.json"))
+        if args.config:
+            # Override config.
+            config = read_config(args.config)
+        else:
+            # Default to snapshotted config from generation.
+            head, tail = os.path.split(args.folder)
+            config = read_config(os.path.join(head, "config.json"))
         eval_embeddings(config, args)
 
 
