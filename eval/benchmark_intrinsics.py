@@ -180,7 +180,7 @@ def gen_embedddings(config, args):
                             processes.append(GenProcess(proc))
                             poll_processes(processes, config["num_cores"])
 
-    wait_processes()
+    wait_processes(processes)
 
 
 def eval_embeddings(config, args):
@@ -235,6 +235,7 @@ def eval_embeddings(config, args):
     for task_class in tasks:
         for task in tasks[task_class]:
             cmd = get_eval_cmd(task, task_class, config["filename"])
+            print(cmd)
             proc = subprocess.Popen(
                 cmd,
                 shell=True,
@@ -266,7 +267,7 @@ def eval_embeddings(config, args):
 
                 poll_processes(processes, config["num_cores"], states)
 
-    wait_processes(states)
+    wait_processes(processes, states)
     """
     Write the output to a CSV.
     """
@@ -274,7 +275,7 @@ def eval_embeddings(config, args):
     csv_out_file = os.path.join(head, "out.csv")
     f = open(csv_out_file, 'w')
     f.write(
-        "quantizer,# centroids or bits,row_bucketer,num_row_buckets,col_bucketer,num_col_buckets,num_bytes"
+        "quantizer,# centroids or bits,row_bucketer,num_row_buckets,col_bucketer,num_col_buckets,num_bytes,"
     )
 
     flat_tasks = []
@@ -286,7 +287,7 @@ def eval_embeddings(config, args):
 
     f.write(",".join(flat_tasks) + "," + "\n")
 
-    f.write("baseline,baseline,baseline,baseline,baseline,baseline,baseline")
+    f.write("baseline,baseline,baseline,baseline,baseline,baseline,baseline,")
     for task in flat_tasks:
         f.write(str(states["baseline"][task]) + ",")
     f.write("\n")
