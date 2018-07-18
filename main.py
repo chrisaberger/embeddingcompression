@@ -22,7 +22,10 @@ elif args.col_bucketer == "kmeans":
 if args.quantizer == "uniform_fp":
     quantizer = quantizers.FixedPointQuantizer(args.num_bits)
 elif args.quantizer == "kmeans":
-    quantizer = quantizers.LloydMaxQuantizer(args.num_centroids, args.quant_num_rows, args.quant_num_cols)
+    if args.quant_num_rows == 1 and args.quant_num_cols == 1:
+        quantizer = quantizers.KmeansQuantizer(args.num_centroids)
+    else:
+        quantizer = quantizers.LloydMaxQuantizer(args.num_centroids, args.quant_num_rows, args.quant_num_cols)
 elif args.quantizer == "uniform_mt":
     quantizer = quantizers.MidtreadQuantizer(args.num_bits)
 """

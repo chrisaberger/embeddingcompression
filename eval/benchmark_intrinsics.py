@@ -227,17 +227,17 @@ def eval_embeddings(config, args):
             output = self.p.stdout.read().strip().decode("utf-8").split(" ")
             print(output)
             if self.task_class == "ws":
-                if len(output) != 3:
-                    states[self.filename][self.task] = float(0.0)
-                else:
-                    states[self.filename][self.task] = float(output[2])
+                try:
+                    states[self.filename][self.task] = float(output[len(output)-1]) 
+                except Error:
+                    states[self.filename][self.task] = 0.0
             elif self.task_class == "analogy":
-                if len(output) != 4:
+                try:
+                    states[self.filename][self.task + "_add" ] = float(output[len(output)-2])
+                    states[self.filename][self.task + "_mul"] = float(output[len(output)-1])
+                except Error:
                     states[self.filename][self.task + "_add"] = float(0.0)
                     states[self.filename][self.task + "_mul"] = float(0.0)
-                else:
-                    states[self.filename][self.task + "_add"] = float(output[2])
-                    states[self.filename][self.task + "_mul"] = float(output[3])
 
     cwd = os.getcwd()
     os.chdir("eval/intrinsic/")
