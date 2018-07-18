@@ -1,0 +1,32 @@
+{
+    "num_cores" : 56,
+    "filename" : "/dfs/scratch0/caberger/systems/GloVe-1.2/vectors.txt",
+    "outdir" : "/lfs/local/0/caberger/fun",
+    "quantizers" : [
+        "uniform_fp",
+        "kmeans"
+    ],
+    "bucketers" : [
+        "uniform",
+        "kmeans"
+    ],
+    "num_row_buckets" : [1, 100, 200, 400, -1],
+    "num_col_buckets" : [1, -1],
+    "num_centroids" : [2, 3, 4],
+    "num_bits" : [4, 5, 6],
+    "tasks" : {
+        "ws": [
+            "bruni_men",
+            "luong_rare",
+            "radinsky_mturk",
+            "simlex999",
+            "ws353_relatedness",
+            "ws353_similarity",
+            "ws353"
+        ],
+        "analogy" : [
+            "google",
+            "msr"
+        ]
+    }
+}

@@ -10,14 +10,14 @@ Based on the user input declear RowBucketer, ColBucketer, and Quantizer
 objects.
 """
 if args.row_bucketer == "uniform":
-    row_bucketer = bucketers.UniformRowBucketer(args.num_row_buckets)
+    row_bucketer = bucketers.UniformRowBucketer(args.num_row_buckets, embedding.shape[0])
 elif args.row_bucketer == "kmeans":
-    row_bucketer = bucketers.KmeansRowBucketer(args.num_row_buckets)
+    row_bucketer = bucketers.KmeansRowBucketer(args.num_row_buckets, embedding.shape[0])
 
 if args.col_bucketer == "uniform":
-    col_bucketer = bucketers.UniformColBucketer(args.num_col_buckets)
+    col_bucketer = bucketers.UniformColBucketer(args.num_col_buckets, embedding.shape[1])
 elif args.col_bucketer == "kmeans":
-    col_bucketer = bucketers.KmeansColBucketer(args.num_col_buckets)
+    col_bucketer = bucketers.KmeansColBucketer(args.num_col_buckets, embedding.shape[1])
 
 if args.quantizer == "uniform_fp":
     quantizer = quantizers.FixedPointQuantizer(args.num_bits)
