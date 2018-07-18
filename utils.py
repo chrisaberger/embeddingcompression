@@ -68,13 +68,13 @@ def parse_arguments():
         type=int,
         help="Number of centroids for kmeans quantization.")
     parser.add_argument(
-        "--quant_dim_rows",
+        "--quant_num_rows",
         action="store",
         default=1,
         type=int,
         help="Number of rows in a vector/matrix Lloyd-Max quantization.")
     parser.add_argument(
-        "--quant_dim_cols",
+        "--quant_num_cols",
         action="store",
         default=1,
         type=int,

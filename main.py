@@ -45,7 +45,7 @@ num_bytes += row_bucketer.extra_bytes_needed()
 num_bytes += col_bucketer.extra_bytes_needed()
 filename = utils.create_filename(args.output_folder, args.filename,
                                  row_bucketer, col_bucketer, quantizer,
-                                 num_bytes)
+                                 num_bytes, args.quant_num_rows, args.quant_num_cols)
 print("Output filename: " + filename)
 core.finish(q_buckets, num_bytes, embedding, vocab, row_reorder, col_reorder,
             filename)

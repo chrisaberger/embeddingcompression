@@ -172,7 +172,7 @@ def gen_embedddings(config, args):
 
     filename = config["filename"]
     processes = []
-    for d in range(0,len(config["quant_dim_rows"])):
+    for d in range(0,len(config["quant_num_rows"])):
         q_dim_r = config["quant_num_rows"][d]
         q_dim_c = config["quant_num_cols"][d]
         for q in config["quantizers"]:
@@ -312,7 +312,7 @@ def eval_embeddings(config, args):
         if filename == "baseline":
             continue
         matchObj = re.match(
-            r'q([^0-9]+)(\d+)b_d_(\d+)_(\d+)_r([^0-9]+)(\d+)_c([^0-9]+)(\d+)_bytes(.*).txt',
+            r'q([^0-9]+)(\d+)b_d(\d+)_(\d+)_r([^0-9]+)(\d+)_c([^0-9]+)(\d+)_bytes(.*).txt',
             filename, re.M | re.I)
         quantizer = matchObj.group(1)
         quantizer_config = matchObj.group(2)
