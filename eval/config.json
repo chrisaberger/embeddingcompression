@@ -14,6 +14,8 @@
     "num_col_buckets" : [1, -1],
     "num_centroids" : [2, 3, 4],
     "num_bits" : [4, 5, 6],
+    "quant_num_rows":[1],
+    "quant_num_cols":[1],
     "tasks" : {
         "ws": [
             "bruni_men",

@@ -67,6 +67,7 @@ class LloydMaxQuantizer(Quantizer):
         return compressed_X, total_bytes
 
 class KmeansQuantizer(Quantizer):
+    #TODO This class is deprecated -- above class can handle this as default setting
 
     def __init__(self, num_centroids):
         self.num_centroids = num_centroids
