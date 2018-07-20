@@ -27,14 +27,14 @@ def parse_arguments():
         action="store",
         default="uniform",
         type=str,
-        choices=["uniform", "kmeans"],
+        choices=["uniform", "kmeans", "orderless"],
         help="Row bucketing strategy.")
     parser.add_argument(
         "--col_bucketer",
         action="store",
         default="uniform",
         type=str,
-        choices=["uniform", "kmeans"],
+        choices=["uniform", "kmeans", "orderless"],
         help="Column bucketing strategy.")
     parser.add_argument(
         "--quantizer",

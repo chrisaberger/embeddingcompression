@@ -24,8 +24,9 @@ elif args.col_bucketer == "kmeans":
                                                embedding.shape[1])
 
 if args.row_bucketer == "orderless":
-    row_bucketer = bucketers.OrderlessBucketer(args.num_row_buckets)
-    col_bucketer = UniformColBucketer(1,embedding.shape[1])
+    row_bucketer = bucketers.OrderlessBucketer(args.num_row_buckets,
+                                        embedding.shape[0])
+    col_bucketer = bucketers.UniformColBucketer(1,embedding.shape[1])
 
 if args.quantizer == "uniform_fp":
     quantizer = quantizers.FixedPointQuantizer(args.num_bits)
