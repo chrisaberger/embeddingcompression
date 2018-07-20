@@ -25,8 +25,8 @@ elif args.col_bucketer == "kmeans":
 
 if args.row_bucketer == "orderless":
     row_bucketer = bucketers.OrderlessBucketer(args.num_row_buckets,
-                                        embedding.shape[0])
-    col_bucketer = bucketers.UniformColBucketer(1,embedding.shape[1])
+                                               embedding.shape[0])
+    col_bucketer = bucketers.UniformColBucketer(1, embedding.shape[1])
 
 if args.quantizer == "uniform_fp":
     quantizer = quantizers.FixedPointQuantizer(args.num_bits)
@@ -60,5 +60,11 @@ filename = utils.create_filename(
     args.output_folder, args.filename, row_bucketer, col_bucketer, quantizer,
     num_bytes, args.quant_num_rows, args.quant_num_cols)
 print("Output filename: " + filename)
+
+#specify the reconstruction type
+recon = 'normal'
+if args.row_bucketer == "orderless":
+    recon = 'orderless'
+
 core.finish(q_buckets, num_bytes, embedding, vocab, row_reorder, col_reorder,
-            filename)
+            filename, recon)

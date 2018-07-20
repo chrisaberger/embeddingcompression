@@ -30,6 +30,7 @@ class UniformRowBucketer(Bucketer):
                 bucket_size -= 1
             start, end = cur_start_index, cur_start_index + bucket_size
             end = X.shape[0] if end > X.shape[0] else end
+            print(X[start:end, :])
             row_bucket.append(X[start:end, :])
             cur_start_index = end
         return row_bucket, np.arange(X.shape[0])

@@ -74,6 +74,7 @@ class KmeansQuantizer(Quantizer):
         return "kmeans" + str(self.num_centroids) + "b"
 
     def quantize(self, X):
+        print(X)
         kmeans = KMeans(n_clusters=self.num_centroids,max_iter=120,tol=0.01)\
                                             .fit(X.reshape(-1, 1))
         compressed_X = kmeans.cluster_centers_[kmeans.labels_] \
