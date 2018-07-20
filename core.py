@@ -36,7 +36,7 @@ def quantize(buckets, quantizer):
     return q_buckets, num_bytes
 
 
-def _reconstruct(buckets, row_reorder, col_reorder, reconstruction):
+def _reconstruct(X, buckets, row_reorder, col_reorder, reconstruction):
     """
     Reconstructs the buckets into inflated embeddings
     Allows special reconstruction specifications
@@ -95,14 +95,14 @@ def _reconstruct(buckets, row_reorder, col_reorder, reconstruction):
 
     elif reconstruction == 'orderless':
         #first reconstruct as per normal
-        X_sorted = _reconstruct(X, row_reorder[0], col_reorder, 'normal')
+        X_sorted = _reconstruct(X, buckets, row_reorder[0], col_reorder, 'normal')
         #now apply the orderless insanity to reconstruct fully
         X_vect_sorted = X_sorted.reshape(-1, 1)
         X_vect_desort = np.zeros(X_vect_sorted.shape)
         codex = row_reorder[1]
         for i in range(0, len(X_vect_desort)):
             X_vect_desort[codex[i]] = X_vect_sorted[i]
-        X_desort = X_vect_desort.reshape(X.sorted.shape)
+        X_desort = X_vect_desort.reshape(X_sorted.shape)
         return X_desort
 
     else:
@@ -116,6 +116,6 @@ def _finish(X, compressed_X, num_bytes, V, filename):
 
 
 def finish(buckets, num_bytes, X, V, row_reorder, col_reorder, filename,
-           specials):
-    X_compressed = _reconstruct(buckets, row_reorder, col_reorder)
+           recons):
+    compressed_X = _reconstruct(X, buckets, row_reorder, col_reorder, recons)
     _finish(X, compressed_X, num_bytes, V, filename)
