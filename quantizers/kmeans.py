@@ -3,7 +3,7 @@ from .quantizer import Quantizer
 from sklearn.cluster import KMeans
 
 
-class LloydMaxQuantizer(Quantizer):
+class VectKmeansQuantizer(Quantizer):
     def __init__(self, num_centroids, q_dim_row, q_dim_col):
         self.num_centroids = num_centroids
         self.q_dim_row = q_dim_row  # num rows to quant together
@@ -34,12 +34,10 @@ class LloydMaxQuantizer(Quantizer):
                 j_prime = j + self.q_dim_col
                 points.append(X[i:i_prime, j:j_prime])
 
-        print(len(points))
         #now we can reshape all points for k-means
         quant_dim = self.q_dim_row * self.q_dim_col
         vectorized_points = [p.reshape(1, quant_dim) for p in points]
         stacked_vectorized_pts = np.vstack(vectorized_points)
-        print(stacked_vectorized_pts.shape)
 
         #now that we have our sample points, we can go ahead and run k-means
         kmeans = KMeans(n_clusters=self.num_centroids,max_iter=120,tol=0.01)\
@@ -74,7 +72,6 @@ class KmeansQuantizer(Quantizer):
         return "kmeans" + str(self.num_centroids) + "b"
 
     def quantize(self, X):
-        print(X)
         kmeans = KMeans(n_clusters=self.num_centroids,max_iter=120,tol=0.01)\
                                             .fit(X.reshape(-1, 1))
         compressed_X = kmeans.cluster_centers_[kmeans.labels_] \

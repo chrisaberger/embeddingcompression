@@ -23,8 +23,8 @@ elif args.col_bucketer == "kmeans":
     col_bucketer = bucketers.KmeansColBucketer(args.num_col_buckets,
                                                embedding.shape[1])
 
-if args.row_bucketer == "orderless":
-    row_bucketer = bucketers.OrderlessBucketer(args.num_row_buckets,
+if args.row_bucketer == "sorted":
+    row_bucketer = bucketers.SortedBucketer(args.num_row_buckets,
                                                embedding.shape[0])
     col_bucketer = bucketers.UniformColBucketer(1, embedding.shape[1])
 
@@ -34,7 +34,7 @@ elif args.quantizer == "kmeans":
     if args.quant_num_rows == 1 and args.quant_num_cols == 1:
         quantizer = quantizers.KmeansQuantizer(args.num_centroids)
     else:
-        quantizer = quantizers.LloydMaxQuantizer(
+        quantizer = quantizers.VectKmeansQuantizer(
             args.num_centroids, args.quant_num_rows, args.quant_num_cols)
 elif args.quantizer == "uniform_mt":
     quantizer = quantizers.MidtreadQuantizer(args.num_bits)
@@ -63,8 +63,8 @@ print("Output filename: " + filename)
 
 #specify the reconstruction type
 recon = 'normal'
-if args.row_bucketer == "orderless":
-    recon = 'orderless'
+if args.row_bucketer == "sorted":
+    recon = 'sorted'
 
 core.finish(q_buckets, num_bytes, embedding, vocab, row_reorder, col_reorder,
             filename, recon)
