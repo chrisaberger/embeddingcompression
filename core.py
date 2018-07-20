@@ -108,6 +108,7 @@ def _reconstruct(X, buckets, row_reorder, col_reorder, reconstruction):
 
     return compressed_X
 
+
 def finish(buckets, num_bytes, X, V, row_reorder, col_reorder, filename,
            recons):
     compressed_X = _reconstruct(X, buckets, row_reorder, col_reorder, recons)

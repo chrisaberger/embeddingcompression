@@ -25,7 +25,7 @@ elif args.col_bucketer == "kmeans":
 
 if args.row_bucketer == "sorted":
     row_bucketer = bucketers.SortedBucketer(args.num_row_buckets,
-                                               embedding.shape[0])
+                                            embedding.shape[0])
     col_bucketer = bucketers.UniformColBucketer(1, embedding.shape[1])
 
 if args.quantizer == "uniform_fp":
