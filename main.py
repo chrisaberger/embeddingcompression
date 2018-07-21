@@ -45,7 +45,7 @@ elif args.quantizer == "prune":
 
 #apply rotation if specified:
 if args.rotation != 'id':
-    rotator = rotations.CF_rotation(args.rotator)
+    rotator = rotations.CF_Rotator(args.rotation)
     embedding = rotator.rotate(embedding)
 
 
