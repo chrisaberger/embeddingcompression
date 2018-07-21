@@ -2,13 +2,19 @@ import utils
 import core
 import quantizers
 import bucketers
+import rotation
 
 args = utils.parse_arguments()
 vocab, embedding = utils.load_embeddings(args.filename)
 """
-Based on the user input declear RowBucketer, ColBucketer, and Quantizer 
-objects.
+Based on the user input declear RowBucketer, 
+ColBucketer, Rotator, and Quantizer objects.
 """
+
+if args.rotator =='id':
+    rotator = rotation.CF_rotation
+
+
 if args.row_bucketer == "uniform":
     row_bucketer = bucketers.UniformRowBucketer(args.num_row_buckets,
                                                 embedding.shape[0])

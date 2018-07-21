@@ -18,7 +18,6 @@ def bucket(row_bucketer, col_bucketer, X):
     buckets, col_reorder = col_bucketer.bucket(row_buckets, X)
     return buckets, row_reorder, col_reorder
 
-
 def quantize(buckets, quantizer):
     """
     Quantizes each bucket!

@@ -79,6 +79,14 @@ def parse_arguments():
         default=1,
         type=int,
         help="Number of cols in a vector/matrix Lloyd-Max quantization.")
+    parser.add_argument(
+        "--rotation",
+        action="store"
+        default="id"
+        type=str
+        choices=["id","quartimax","biquartimax","varimax","equamax","parsimax",
+                                    "parsimony","quartimin","biquartimin"]
+        help="The rotation to pre-apply to the matrix.")
 
     args = parser.parse_args()
     print(args)
