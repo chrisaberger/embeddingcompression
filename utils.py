@@ -41,7 +41,7 @@ def parse_arguments():
         action="store",
         default="uniform_fp",
         type=str,
-        choices=["uniform_fp", "kmeans", "uniform_mt"],
+        choices=["uniform_fp", "kmeans", "uniform_mt","prune"],
         help="Quantization strategy.")
     parser.add_argument(
         "--num_row_buckets",

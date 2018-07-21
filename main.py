@@ -2,7 +2,7 @@ import utils
 import core
 import quantizers
 import bucketers
-import rotation
+import rotations
 
 args = utils.parse_arguments()
 vocab, embedding = utils.load_embeddings(args.filename)
@@ -10,10 +10,6 @@ vocab, embedding = utils.load_embeddings(args.filename)
 Based on the user input declear RowBucketer, 
 ColBucketer, Rotator, and Quantizer objects.
 """
-
-if args.rotator =='id':
-    rotator = rotation.CF_rotation
-
 
 if args.row_bucketer == "uniform":
     row_bucketer = bucketers.UniformRowBucketer(args.num_row_buckets,
@@ -44,6 +40,15 @@ elif args.quantizer == "kmeans":
             args.num_centroids, args.quant_num_rows, args.quant_num_cols)
 elif args.quantizer == "uniform_mt":
     quantizer = quantizers.MidtreadQuantizer(args.num_bits)
+elif args.quantizer == "prune":
+    quantizer = quantizers.PruneQuantizer(args.num_bits)
+
+#apply rotation if specified:
+if args.rotation != 'id':
+    rotator = rotations.CF_rotation(args.rotator)
+    embedding = rotator.rotate(embedding)
+
+
 """
 Run the bucketing algorithms! The bucketing algorithms are always run by running
 the 'row_bucketer' first then by running the 'col_bucketer' second. If you must
