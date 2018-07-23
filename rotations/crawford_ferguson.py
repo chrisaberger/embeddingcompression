@@ -10,5 +10,11 @@ class CF_Rotator(Rotator) :
         return "cf_"+objective
 
     def rotate(self, X):
-        print("Applying a "+self.objective+" rotation to the embeddings matrix ...")
-        return factor_rotation.rotate_factors(X,self.objective)[0]
+        print("Applying the "+self.objective+" rotation to the matrix ...")
+        print(self.objective[-3:-1])
+        if self.objective[-3:] == "max" or self.objective[0:3] == "par":
+            #for this class of rotations, we can use the analytic solution
+            print("gpa")
+            return factor_rotation.rotate_factors(X,self.objective,'gpa',max_tries=250)[0]
+        else: 
+            return factor_rotation.rotate_factors(X,self.objective,'analytic')[0]

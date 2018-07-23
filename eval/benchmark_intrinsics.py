@@ -138,7 +138,7 @@ def gen_embedddings(config, args):
                (cb == "kmeans" and (c == -1 or c == 1)) or \
                (c == -1 and r == -1)
 
-    def get_gen_cmd(filename, r, c, sweep, s, q, rb, outdir, cb, q_dim_r, q_dim_c):
+    def get_gen_cmd(filename, r, c, sweep, s, q, rb, outdir, cb, q_dim_r, q_dim_c, rots):
         cmd = f"python main.py" + \
                     f" -f {filename}" + \
                     f" --num_row_buckets {r}" + \
@@ -149,7 +149,8 @@ def gen_embedddings(config, args):
                     f" --output_folder {outdir}" + \
                     f" --col_bucketer {cb}" + \
                     f" --quant_num_rows {q_dim_r}" + \
-                    f" --quant_num_cols {q_dim_c}"
+                    f" --quant_num_cols {q_dim_c}" + \
+                    f" --rotation {rots}"
         log_file = os.path.join(logdir,
                                 f"q{q}_r{rb}{r}_c{cb}{c}_{sweep}{s}.log")
         return cmd + f" 2>&1 | tee {log_file}"
@@ -175,23 +176,24 @@ def gen_embedddings(config, args):
     for d in range(0,len(config["quant_num_rows"])):
         q_dim_r = config["quant_num_rows"][d]
         q_dim_c = config["quant_num_cols"][d]
-        for q in config["quantizers"]:
-            for cb in config["bucketers"]:
-                for rb in config["bucketers"]:
-                    sweep = "num_centroids" if q == "kmeans" else "num_bits"
-                    for r in config["num_row_buckets"]:
-                        for c in config["num_col_buckets"]:
-                            if is_invalid_config(rb, r, cb, c):
-                                break
-                            for s in config[sweep]:
-                                cmd = get_gen_cmd(filename, r, c, sweep, s, q, rb,
-                                                  outdir, cb, q_dim_r, q_dim_c)
-                                print(cmd)
-                                proc = subprocess.Popen(
-                                    cmd,
-                                    shell=True)    #, stdout=subprocess.DEVNULL)
-                                processes.append(GenProcess(proc))
-                                poll_processes(processes, config["num_cores"])
+        for rots in config["rotation"]:
+            for q in config["quantizers"]:
+                for cb in config["bucketers"]:
+                    for rb in config["bucketers"]:
+                        sweep = "num_centroids" if q == "kmeans" else "num_bits"
+                        for r in config["num_row_buckets"]:
+                            for c in config["num_col_buckets"]:
+                                if is_invalid_config(rb, r, cb, c):
+                                    break
+                                for s in config[sweep]:
+                                    cmd = get_gen_cmd(filename, r, c, sweep, s, q, rb,
+                                                      outdir, cb, q_dim_r, q_dim_c, rots)
+                                    print(cmd)
+                                    proc = subprocess.Popen(
+                                        cmd,
+                                        shell=True)    #, stdout=subprocess.DEVNULL)
+                                    processes.append(GenProcess(proc))
+                                    poll_processes(processes, config["num_cores"])
 
     wait_processes(processes)
 
