@@ -210,7 +210,7 @@ def eval_embeddings(config, args):
             return f"python analogy_eval.py GLOVE {filename} testsets/{task_class}/{task}.txt"
         elif task_class == "frobenius":
             #note "task" is the baseline embeddings here
-            return f"python frobenius_dist.py {task} {filename}"
+            return f"python frobenius_dist.py run {task} {filename}"
         raise ValueError("Task class not recognized.")
 
     class EvalProcess:
@@ -243,7 +243,7 @@ def eval_embeddings(config, args):
                 except Error:
                     states[self.filename][self.task + "_add"] = float(0.0)
                     states[self.filename][self.task + "_mul"] = float(0.0)
-            elif self.task_class == "frobenius"
+            elif self.task_class == "frobenius":
                 try:
                     states[self.filename][self.task + "_frodist"] = float(output[len(output)-1])
                 except Error:
