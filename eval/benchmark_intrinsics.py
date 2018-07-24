@@ -309,6 +309,8 @@ def eval_embeddings(config, args):
     for task in config["tasks"]["analogy"]:
         flat_tasks.append(task + "_add")
         flat_tasks.append(task + "_mul")
+    for task in config["tasks"]["frobenius"]:
+        flat_tasks.append(task)
 
     f.write(",".join(flat_tasks) + "," + "\n")
 
