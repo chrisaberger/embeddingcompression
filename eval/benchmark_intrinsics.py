@@ -316,7 +316,8 @@ def eval_embeddings(config, args):
 
     f.write("baseline,baseline,baseline,baseline,baseline,baseline,baseline,")
     for task in flat_tasks:
-        f.write(str(states["baseline"][task]) + ",")
+        if task != 'frobenius':
+            f.write(str(states["baseline"][task]) + ",")
     f.write("\n")
 
     # Use a regex to extract information from the embedding filename.
