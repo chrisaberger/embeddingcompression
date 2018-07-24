@@ -243,6 +243,11 @@ def eval_embeddings(config, args):
                 except Error:
                     states[self.filename][self.task + "_add"] = float(0.0)
                     states[self.filename][self.task + "_mul"] = float(0.0)
+            elif self.task_class == "frobenius"
+                try:
+                    states[self.filename][self.task + "_frodist"] = float(output[len(output)-1])
+                except Error:
+                    states[self.filename][self.task + "_frodist"] = float(0.0)
 
     cwd = os.getcwd()
     os.chdir("eval/intrinsic/")
@@ -313,6 +318,7 @@ def eval_embeddings(config, args):
     f.write("\n")
 
     # Use a regex to extract information from the embedding filename.
+    #TODO: fix this for rotations
     for filename in states:
         if filename == "baseline":
             continue
