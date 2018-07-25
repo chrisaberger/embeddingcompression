@@ -209,8 +209,9 @@ def eval_embeddings(config, args):
         elif task_class == "analogy":
             return f"python analogy_eval.py GLOVE {filename} testsets/{task_class}/{task}.txt"
         elif task_class == "frobenius":
-            #note "task" is the baseline embeddings here
-            return f"python frobenius_dist.py run {task} {filename}"
+            #note "task" is the baseline embeddings herei
+            print(config['filename'])
+            return f"python frobenius_dist.py run {config['filename']} {filename}"
         raise ValueError("Task class not recognized.")
 
     class EvalProcess:
@@ -245,9 +246,9 @@ def eval_embeddings(config, args):
                     states[self.filename][self.task + "_mul"] = float(0.0)
             elif self.task_class == "frobenius":
                 try:
-                    states[self.filename][self.task + "_frodist"] = float(output[len(output)-1])
+                    states[self.filename][self.task] = float(output[len(output)-1])
                 except Error:
-                    states[self.filename][self.task + "_frodist"] = float(0.0)
+                    states[self.filename][self.task] = float(0.0)
 
     cwd = os.getcwd()
     os.chdir("eval/intrinsic/")
@@ -310,16 +311,14 @@ def eval_embeddings(config, args):
         flat_tasks.append(task + "_add")
         flat_tasks.append(task + "_mul")
     for task in config["tasks"]["frobenius"]:
-        flat_tasks.append(task)
+        flat_tasks.append('frobenius')
 
     f.write(",".join(flat_tasks) + "," + "\n")
 
     f.write("baseline,baseline,baseline,baseline,baseline,baseline,baseline,")
     for task in flat_tasks:
-        if task != 'frobenius':
-            f.write(str(states["baseline"][task]) + ",")
+        f.write(str(states["baseline"][task]) + ",")
     f.write("\n")
-
     # Use a regex to extract information from the embedding filename.
     #TODO: fix this for rotations
     for filename in states:
@@ -343,6 +342,7 @@ def eval_embeddings(config, args):
                 num_row_buckets, col_bucketer, num_col_buckets, num_bytes]))
         f.write(",")
         for task in flat_tasks:
+            print(states)
             f.write(str(states[filename][task]) + ",")
         f.write("\n")
 
