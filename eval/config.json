@@ -30,6 +30,7 @@
         "analogy" : [
             "google",
             "msr"
-        ]
+        ],
+        "frobenius" : "frobenius"]
     }
 }
