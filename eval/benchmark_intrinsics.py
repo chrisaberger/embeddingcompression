@@ -209,14 +209,11 @@ def eval_embeddings(config, args):
         elif task_class == "analogy":
             return f"python analogy_eval.py GLOVE {filename} testsets/{task_class}/{task}.txt"
         elif task_class == "frobenius":
-<<<<<<< HEAD
             #note "task" is the baseline embeddings herei
             print(config['filename'])
             return f"python frobenius_dist.py run {config['filename']} {filename}"
-=======
             #note "task" is the baseline embeddings here
             return f"python frobenius_dist.py run {task} {filename}"
->>>>>>> 155da0e6f1a7fb4b8e68fd0ebf25bfbb7a4028ef
         raise ValueError("Task class not recognized.")
 
     class EvalProcess:
@@ -330,7 +327,7 @@ def eval_embeddings(config, args):
         if filename == "baseline":
             continue
         matchObj = re.match(
-            r'q([^0-9]+)(\d+)b_d(\d+)_(\d+)_r([^0-9]+)(\d+)_c([^0-9]+)(\d+)_bytes(.*).txt',
+            r'q([^0-9]+)(\d+)b_d(\d+)_(\d+)_r([^0-9]+)(\d+)_c([^0-9]+)(\d+)_r_([^0-9]+)_bytes(.*).txt',
             filename, re.M | re.I)
         quantizer = matchObj.group(1)
         quantizer_config = matchObj.group(2)

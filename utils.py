@@ -131,7 +131,7 @@ def print_stats(X, q_X, n_bytes):
 
 
 def create_filename(output_folder, input_filename, row_bucketer, col_bucketer,
-                    quantizer, num_bytes, q_d_r, q_c_r):
+                    quantizer, num_bytes, q_d_r, q_c_r, rot):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     output_folder = os.path.join(output_folder,
@@ -143,6 +143,7 @@ def create_filename(output_folder, input_filename, row_bucketer, col_bucketer,
             + "_d" + str(q_d_r) + "_" + str(q_c_r)\
             + "_r" + row_bucketer.name()\
             + "_c" + col_bucketer.name()\
+            + "_r_" + rot.name()\
             + "_bytes" + str(num_bytes) + ".txt"
     return os.path.join(output_folder, filename)
 
