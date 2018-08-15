@@ -18,7 +18,6 @@ def bucket(row_bucketer, col_bucketer, X):
     buckets, col_reorder = col_bucketer.bucket(row_buckets, X)
     return buckets, row_reorder, col_reorder
 
-
 def quantize(buckets, quantizer):
     """
     Quantizes each bucket!
@@ -36,13 +35,16 @@ def quantize(buckets, quantizer):
     return q_buckets, num_bytes
 
 
-def finish(buckets, num_bytes, X, V, row_reorder, col_reorder, filename):
+def _reconstruct(X, buckets, row_reorder, col_reorder, reconstruction):
     """
-    Reorders everything back, prints some stats, and sends the compressed 
-    embeddings to a file in GloVe format. The output files always appear in the
-    'output' directory.
+    Reconstructs the buckets into inflated embeddings
+    Allows special reconstruction specifications
     """
     print("Reconstructing...")
+    codex = None
+    if reconstruction == 'sorted':
+        codex = row_reorder[1]
+        row_reorder = row_reorder[0]
 
     # Allocate buffers for each row bucket. These are used when the columns are
     # reconstructed.
@@ -85,17 +87,31 @@ def finish(buckets, num_bytes, X, V, row_reorder, col_reorder, filename):
 
         row_start = row_end
 
-    print(compressed_X.shape)
-
     # reorder the 'reconstructed' matrix. by row reorder
     new_x = np.zeros(compressed_X.shape)
     for i in range(compressed_X.shape[0]):
         new_x[row_reorder[i], :] = compressed_X[i, :]
     #compressed_X = compressed_X[row_reorder, :]
     compressed_X = np.copy(new_x, order="F")
-    print(compressed_X.shape)
+
+    if reconstruction == 'sorted':
+        #first reconstruct as per normal
+        X_sorted = compressed_X
+        #now apply the sorted insanity to reconstruct fully
+        X_vect_sorted = X_sorted.reshape(-1, 1)
+        X_vect_desort = np.zeros(X_vect_sorted.shape)
+        for i in range(0, len(X_vect_desort)):
+            X_vect_desort[codex[i]] = X_vect_sorted[i]
+        X_desort = X_vect_desort.reshape(X_sorted.shape)
+        return X_desort
+
+    return compressed_X
+
+
+def finish(buckets, num_bytes, X, V, row_reorder, col_reorder, filename,
+           recons):
+    compressed_X = _reconstruct(X, buckets, row_reorder, col_reorder, recons)
 
     # Print stats and send to file.
     utils.print_stats(X, compressed_X, num_bytes)
-
     utils.to_file(filename, V, compressed_X)

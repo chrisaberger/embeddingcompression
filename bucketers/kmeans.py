@@ -32,7 +32,6 @@ class KmeansRowBucketer(Bucketer):
         buckets = []
         bucket_index = np.zeros(self.num_buckets, dtype=np.int)
         bincount = np.bincount(kmeans.labels_)
-        
         sum_prev_indexes = np.zeros(bincount.shape, dtype=np.int)
         final_indexes = np.zeros(X.shape[0], dtype=np.int)
         running_sum = 0
@@ -61,7 +60,7 @@ class KmeansColBucketer(Bucketer):
 
     def extra_bytes_needed(self):
         # In each bucket you need a mapping back to the original column order.
-        return self.num_buckets * self.num_cols * 4 
+        return self.num_buckets * self.num_cols * 4
 
     def bucket(self, row_buckets, X):
         self.num_cols = X.shape[1]

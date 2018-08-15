@@ -27,21 +27,21 @@ def parse_arguments():
         action="store",
         default="uniform",
         type=str,
-        choices=["uniform", "kmeans"],
+        choices=["uniform", "kmeans", "sorted"],
         help="Row bucketing strategy.")
     parser.add_argument(
         "--col_bucketer",
         action="store",
         default="uniform",
         type=str,
-        choices=["uniform", "kmeans"],
+        choices=["uniform", "kmeans", "sorted"],
         help="Column bucketing strategy.")
     parser.add_argument(
         "--quantizer",
         action="store",
         default="uniform_fp",
         type=str,
-        choices=["uniform_fp", "kmeans", "uniform_mt"],
+        choices=["uniform_fp", "kmeans", "uniform_mt","prune"],
         help="Quantization strategy.")
     parser.add_argument(
         "--num_row_buckets",
@@ -67,6 +67,27 @@ def parse_arguments():
         default=2,
         type=int,
         help="Number of centroids for kmeans quantization.")
+    parser.add_argument(
+        "--quant_num_rows",
+        action="store",
+        default=1,
+        type=int,
+        help="Number of rows in a vector/matrix Lloyd-Max quantization.")
+    parser.add_argument(
+        "--quant_num_cols",
+        action="store",
+        default=1,
+        type=int,
+        help="Number of cols in a vector/matrix Lloyd-Max quantization.")
+    parser.add_argument(
+        "--rotation",
+        action="store",
+        default="id",
+        type=str,
+        choices=["id","quartimax","biquartimax","varimax","equamax","parsimax",
+                                    "parsimony","quartimin","biquartimin"],
+        help="The rotation to pre-apply to the matrix.")
+
     args = parser.parse_args()
     print(args)
     return args
@@ -110,7 +131,7 @@ def print_stats(X, q_X, n_bytes):
 
 
 def create_filename(output_folder, input_filename, row_bucketer, col_bucketer,
-                    quantizer, num_bytes):
+                    quantizer, num_bytes, q_d_r, q_c_r):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     output_folder = os.path.join(output_folder,
@@ -119,6 +140,7 @@ def create_filename(output_folder, input_filename, row_bucketer, col_bucketer,
         os.makedirs(output_folder)
 
     filename = "q" + quantizer.name()\
+            + "_d" + str(q_d_r) + "_" + str(q_c_r)\
             + "_r" + row_bucketer.name()\
             + "_c" + col_bucketer.name()\
             + "_bytes" + str(num_bytes) + ".txt"
