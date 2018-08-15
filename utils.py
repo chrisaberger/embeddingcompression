@@ -41,7 +41,7 @@ def parse_arguments():
         action="store",
         default="uniform_fp",
         type=str,
-        choices=["uniform_fp", "kmeans", "uniform_mt","prune"],
+        choices=["uniform_fp", "kmeans", "uniform_mt","prune", "crazyprune"],
         help="Quantization strategy.")
     parser.add_argument(
         "--num_row_buckets",
@@ -143,7 +143,7 @@ def create_filename(output_folder, input_filename, row_bucketer, col_bucketer,
             + "_d" + str(q_d_r) + "_" + str(q_c_r)\
             + "_r" + row_bucketer.name()\
             + "_c" + col_bucketer.name()\
-            + "_r_" + rot.name()\
+            + "_r_" + str(rot)\
             + "_bytes" + str(num_bytes) + ".txt"
     return os.path.join(output_folder, filename)
 

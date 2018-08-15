@@ -42,6 +42,8 @@ elif args.quantizer == "uniform_mt":
     quantizer = quantizers.MidtreadQuantizer(args.num_bits)
 elif args.quantizer == "prune":
     quantizer = quantizers.PruneQuantizer(args.num_bits)
+elif args.quantizer == "crazyprune":
+    quantizer = quantizers.CrazyPruneQuantizer(args.num_bits)
 
 #apply rotation if specified:
 if args.rotation != 'id':
