@@ -3,6 +3,7 @@ import core
 import quantizers
 import bucketers
 import rotations
+import random
 
 args = utils.parse_arguments()
 vocab, embedding = utils.load_embeddings(args.filename)
@@ -16,14 +17,14 @@ if args.row_bucketer == "uniform":
                                                 embedding.shape[0])
 elif args.row_bucketer == "kmeans":
     row_bucketer = bucketers.KmeansRowBucketer(args.num_row_buckets,
-                                               embedding.shape[0])
+                                               embedding.shape[0],args.rseed)
 
 if args.col_bucketer == "uniform":
     col_bucketer = bucketers.UniformColBucketer(args.num_col_buckets,
                                                 embedding.shape[1])
 elif args.col_bucketer == "kmeans":
     col_bucketer = bucketers.KmeansColBucketer(args.num_col_buckets,
-                                               embedding.shape[1])
+                                               embedding.shape[1],args.rseed)
 
 if args.row_bucketer == "sorted":
     row_bucketer = bucketers.SortedBucketer(args.num_row_buckets,
@@ -34,10 +35,10 @@ if args.quantizer == "uniform_fp":
     quantizer = quantizers.FixedPointQuantizer(args.num_bits)
 elif args.quantizer == "kmeans":
     if args.quant_num_rows == 1 and args.quant_num_cols == 1:
-        quantizer = quantizers.KmeansQuantizer(args.num_centroids)
+        quantizer = quantizers.KmeansQuantizer(args.num_centroids,args.rseed)
     else:
         quantizer = quantizers.VectKmeansQuantizer(
-            args.num_centroids, args.quant_num_rows, args.quant_num_cols)
+            args.num_centroids, args.quant_num_rows, args.quant_num_cols,args.rseed)
 elif args.quantizer == "uniform_mt":
     quantizer = quantizers.MidtreadQuantizer(args.num_bits)
 elif args.quantizer == "prune":
@@ -71,7 +72,7 @@ num_bytes += row_bucketer.extra_bytes_needed()
 num_bytes += col_bucketer.extra_bytes_needed()
 filename = utils.create_filename(
     args.output_folder, args.filename, row_bucketer, col_bucketer, quantizer,
-    num_bytes, args.quant_num_rows, args.quant_num_cols, args.rotation)
+    num_bytes, args.quant_num_rows, args.quant_num_cols, args.rotation, args.rseed)
 print("Output filename: " + filename)
 
 #specify the reconstruction type

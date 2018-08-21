@@ -4,10 +4,11 @@ from sklearn.cluster import KMeans
 
 
 class VectKmeansQuantizer(Quantizer):
-    def __init__(self, num_centroids, q_dim_row, q_dim_col):
+    def __init__(self, num_centroids, q_dim_row, q_dim_col,rseed):
         self.num_centroids = num_centroids
         self.q_dim_row = q_dim_row  # num rows to quant together
         self.q_dim_col = q_dim_col  # num cols to quant together
+        self.rseed = rseed
 
     def name(self):
         return "lloydmax" + str(self.num_centroids) + "b"
@@ -40,7 +41,7 @@ class VectKmeansQuantizer(Quantizer):
         stacked_vectorized_pts = np.vstack(vectorized_points)
 
         #now that we have our sample points, we can go ahead and run k-means
-        kmeans = KMeans(n_clusters=self.num_centroids,max_iter=120,tol=0.01)\
+        kmeans = KMeans(n_clusters=self.num_centroids,max_iter=120,tol=0.01,random_state=self.rseed)\
                                    .fit(stacked_vectorized_pts)
         compressed_X = np.zeros([num_rows_in_buck, num_cols_in_buck])
 
@@ -65,14 +66,15 @@ class VectKmeansQuantizer(Quantizer):
 
 
 class KmeansQuantizer(Quantizer):
-    def __init__(self, num_centroids):
+    def __init__(self, num_centroids, rseed):
         self.num_centroids = num_centroids
+        self.rseed = rseed
 
     def name(self):
         return "kmeans" + str(self.num_centroids) + "b"
 
     def quantize(self, X):
-        kmeans = KMeans(n_clusters=self.num_centroids,max_iter=120,tol=0.01)\
+        kmeans = KMeans(n_clusters=self.num_centroids,max_iter=120,tol=0.01,random_state=self.rseed)\
                                             .fit(X.reshape(-1, 1))
         compressed_X = kmeans.cluster_centers_[kmeans.labels_] \
                                         .reshape(X.shape)

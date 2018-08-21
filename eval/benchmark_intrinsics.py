@@ -138,7 +138,7 @@ def gen_embedddings(config, args):
                (cb == "kmeans" and (c == -1 or c == 1)) or \
                (c == -1 and r == -1)
 
-    def get_gen_cmd(filename, r, c, sweep, s, q, rb, outdir, cb, q_dim_r, q_dim_c, rots):
+    def get_gen_cmd(filename, r, c, sweep, s, q, rb, outdir, cb, q_dim_r, q_dim_c, rots, rseed):
         cmd = f"python main.py" + \
                     f" -f {filename}" + \
                     f" --num_row_buckets {r}" + \
@@ -150,7 +150,8 @@ def gen_embedddings(config, args):
                     f" --col_bucketer {cb}" + \
                     f" --quant_num_rows {q_dim_r}" + \
                     f" --quant_num_cols {q_dim_c}" + \
-                    f" --rotation {rots}"
+                    f" --rotation {rots}" + \
+                    f" --rseed {rseed}"
         log_file = os.path.join(logdir,
                                 f"q{q}_r{rb}{r}_c{cb}{c}_{sweep}{s}.log")
         return cmd + f" 2>&1 | tee {log_file}"
@@ -173,27 +174,28 @@ def gen_embedddings(config, args):
 
     filename = config["filename"]
     processes = []
-    for d in range(0,len(config["quant_num_rows"])):
-        q_dim_r = config["quant_num_rows"][d]
-        q_dim_c = config["quant_num_cols"][d]
-        for rots in config["rotation"]:
-            for q in config["quantizers"]:
-                for cb in config["bucketers"]:
-                    for rb in config["bucketers"]:
-                        sweep = "num_centroids" if q == "kmeans" else "num_bits"
-                        for r in config["num_row_buckets"]:
-                            for c in config["num_col_buckets"]:
-                                if is_invalid_config(rb, r, cb, c):
-                                    break
-                                for s in config[sweep]:
-                                    cmd = get_gen_cmd(filename, r, c, sweep, s, q, rb,
-                                                      outdir, cb, q_dim_r, q_dim_c, rots)
-                                    print(cmd)
-                                    proc = subprocess.Popen(
-                                        cmd,
-                                        shell=True)    #, stdout=subprocess.DEVNULL)
-                                    processes.append(GenProcess(proc))
-                                    poll_processes(processes, config["num_cores"])
+    for rseed in config["rseed"]:
+        for d in range(0,len(config["quant_num_rows"])):
+            q_dim_r = config["quant_num_rows"][d]
+            q_dim_c = config["quant_num_cols"][d]
+            for rots in config["rotation"]:
+                for q in config["quantizers"]:
+                    for cb in config["bucketers"]:
+                        for rb in config["bucketers"]:
+                            sweep = "num_centroids" if q == "kmeans" else "num_bits"
+                            for r in config["num_row_buckets"]:
+                                for c in config["num_col_buckets"]:
+                                    if is_invalid_config(rb, r, cb, c):
+                                        break
+                                    for s in config[sweep]:
+                                        cmd = get_gen_cmd(filename, r, c, sweep, s, q, rb,
+                                                          outdir, cb, q_dim_r, q_dim_c, rots, rseed)
+                                        print(cmd)
+                                        proc = subprocess.Popen(
+                                            cmd,
+                                            shell=True)    #, stdout=subprocess.DEVNULL)
+                                        processes.append(GenProcess(proc))
+                                        poll_processes(processes, config["num_cores"])
 
     wait_processes(processes)
 
@@ -324,7 +326,7 @@ def eval_embeddings(config, args):
         if filename == "baseline":
             continue
         matchObj = re.match(
-            r'q([^0-9]+)(\d+)b_d(\d+)_(\d+)_r([^0-9]+)(\d+)_c([^0-9]+)(\d+)_r_([^0-9]+)_bytes(.*).txt',
+            r'q([^0-9]+)(\d+)b_d(\d+)_(\d+)_r([^0-9]+)(\d+)_c([^0-9]+)(\d+)_r_([^0-9]+)_rseed_(\d+)_bytes(.*).txt',
             filename, re.M | re.I)
         quantizer = matchObj.group(1)
         quantizer_config = matchObj.group(2)

@@ -87,6 +87,12 @@ def parse_arguments():
         choices=["id","quartimax","biquartimax","varimax","equamax","parsimax",
                                     "parsimony","quartimin","biquartimin"],
         help="The rotation to pre-apply to the matrix.")
+    parser.add_argument(
+        "--rseed",
+        action="store",
+        default=1234,
+        type=int,
+        help="The random seed")
 
     args = parser.parse_args()
     print(args)
@@ -131,7 +137,7 @@ def print_stats(X, q_X, n_bytes):
 
 
 def create_filename(output_folder, input_filename, row_bucketer, col_bucketer,
-                    quantizer, num_bytes, q_d_r, q_c_r, rot):
+                    quantizer, num_bytes, q_d_r, q_c_r, rot, rseed):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     output_folder = os.path.join(output_folder,
@@ -144,6 +150,7 @@ def create_filename(output_folder, input_filename, row_bucketer, col_bucketer,
             + "_r" + row_bucketer.name()\
             + "_c" + col_bucketer.name()\
             + "_r_" + str(rot)\
+            + "_rseed_" + str(rseed)\
             + "_bytes" + str(num_bytes) + ".txt"
     return os.path.join(output_folder, filename)
 
